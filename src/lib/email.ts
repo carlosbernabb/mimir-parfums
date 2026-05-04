@@ -10,9 +10,10 @@ const transporter = nodemailer.createTransport({
 });
 
 const ADMIN_EMAILS = [
+  "carbebezu.10@gmail.com",
   "sinfantea@gmail.com",
   "santirene367@gmail.com",
-  "carbebezu.10@gmail.com",
+  "anchrishess@gmail.com",
 ];
 
 const SENDER = process.env.GMAIL_USER!;
