@@ -164,3 +164,8 @@ textarea.input-luxury { display: block; font-family: 'Cormorant Garamond', serif
 .arabic-pattern-bg {
   background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%238B1A1A' fill-opacity='0.03'%3E%3Cpath d='M40 0 L45 15 L60 15 L48 24 L53 39 L40 30 L27 39 L32 24 L20 15 L35 15 Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
+
+.product-card:hover .card-details-overlay {
+  opacity: 1 !important;
+  background: rgba(0,0,0,0.25) !important;
+}

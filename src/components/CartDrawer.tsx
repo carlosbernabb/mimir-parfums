@@ -1,8 +1,7 @@
 "use client";
 
-"use client";
-
 import { useState } from "react";
+import Image from "next/image";
 import { useCart, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/cart-store";
 import CheckoutModal from "./CheckoutModal";
 
@@ -101,21 +100,31 @@ export default function CartDrawer() {
                       alignItems: "center",
                     }}
                   >
-                    {/* Mini bottle icon */}
+                    {/* Product thumbnail */}
                     <div
                       style={{
-                        width: 52,
-                        height: 52,
+                        width: 56,
+                        height: 56,
                         background: "rgba(139,26,26,0.1)",
                         border: "1px solid rgba(201,168,76,0.1)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         flexShrink: 0,
-                        fontSize: "1.3rem",
+                        overflow: "hidden",
                       }}
                     >
-                      🫧
+                      {item.product.image ? (
+                        <Image
+                          src={item.product.image}
+                          alt={item.product.name}
+                          width={56}
+                          height={56}
+                          style={{ objectFit: "contain", width: "100%", height: "100%" }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: "1.3rem" }}>🫧</span>
+                      )}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>

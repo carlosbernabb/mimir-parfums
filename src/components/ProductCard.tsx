@@ -73,6 +73,37 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             <PerfumeBottleSVG color={colors.accent} name={product.name} size={80} />
           )}
 
+          {/* Ver Detalles overlay */}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0,0,0,0)",
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "center",
+              paddingBottom: 12,
+              opacity: 0,
+              transition: "opacity 0.2s",
+            }}
+            className="card-details-overlay"
+          >
+            <span
+              style={{
+                fontSize: "0.55rem",
+                fontFamily: "'Cinzel', serif",
+                letterSpacing: "0.18em",
+                color: "var(--gold)",
+                border: "1px solid rgba(201,168,76,0.5)",
+                padding: "5px 12px",
+                background: "rgba(0,0,0,0.6)",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              VER DETALLES
+            </span>
+          </div>
+
           {/* Volume badge */}
           <div
             style={{
