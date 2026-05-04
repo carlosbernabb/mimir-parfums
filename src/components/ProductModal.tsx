@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Product } from "@/lib/products";
 import { useCart } from "@/lib/cart-store";
 import PerfumeBottleSVG from "./PerfumeBottleSVG";
@@ -59,7 +60,17 @@ export default function ProductModal({ product, onClose, color }: ProductModalPr
             padding: "20px 0 24px",
           }}
         >
-          <PerfumeBottleSVG color={color} name={product.name} size={160} />
+          {product.image ? (
+            <Image
+              src={product.image}
+              alt={product.name}
+              width={260}
+              height={260}
+              style={{ objectFit: "contain", maxHeight: 260 }}
+            />
+          ) : (
+            <PerfumeBottleSVG color={color} name={product.name} size={160} />
+          )}
         </div>
 
         <div style={{ padding: "0 24px 32px" }}>

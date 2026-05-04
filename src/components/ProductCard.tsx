@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Product } from "@/lib/products";
 import { useCart } from "@/lib/cart-store";
 import ProductModal from "./ProductModal";
@@ -60,7 +61,17 @@ export default function ProductCard({ product, index }: ProductCardProps) {
             padding: "24px",
           }}
         >
-          <PerfumeBottleSVG color={colors.accent} name={product.name} size={80} />
+          {product.image ? (
+            <Image
+              src={product.image}
+              alt={product.name}
+              width={200}
+              height={200}
+              style={{ objectFit: "contain", maxHeight: 200 }}
+            />
+          ) : (
+            <PerfumeBottleSVG color={colors.accent} name={product.name} size={80} />
+          )}
 
           {/* Volume badge */}
           <div
