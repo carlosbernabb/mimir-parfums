@@ -12,19 +12,19 @@ export interface Product {
 
 export const products: Product[] = [
   {
-    id: "game-of-spades-boston",
-    name: "Game of Spades Boston",
-    subtitle: "El as más oscuro del tablero",
+    id: "armaf-arabian-sky",
+    name: "Armaf Eter Arabian Sky",
+    subtitle: "El horizonte infinito del desierto",
     description:
-      "Creado por Jo Milano Paris, Game of Spades Boston es una oda al poder y la audacia. Inspirado en el naipe más temido, abre con bergamota chispeante que cede paso a un corazón especiado de pimienta negra y cuero fino. La base de oud y sándalo oscuro lo convierte en una firma implacable para quien juega —y gana— en grande.",
+      "Armaf, la maison de lujo india fundada en Dubai, captura en Arabian Sky la inmensidad del cielo árabe. Una apertura acuática y fresca de notas marinas y cítricos mediterráneos transiciona hacia un corazón floral-especiado de lavanda y rosa. La base amaderada de sándalo cremoso y almizcle blanco es tan etérea como un atardecer sobre las dunas. Unisex en esencia, universal en presencia.",
     notes: {
-      top: ["Bergamota", "Pomelo", "Pimienta Negra"],
-      heart: ["Cuero Fino", "Madera de Oud", "Cardamomo"],
-      base: ["Sándalo Oscuro", "Almizcle Negro", "Ámbar", "Vetiver"],
+      top: ["Notas Marinas", "Bergamota", "Pomelo"],
+      heart: ["Lavanda", "Rosa Turca", "Cardamomo"],
+      base: ["Sándalo Cremoso", "Almizcle Blanco", "Ámbar Gris", "Cedro"],
     },
-    price: 1575,
+    price: 990,
     volume: "100ml",
-    image: "/perfumes/game-of-spades-boston.png",
+    image: "/perfumes/armaf-arabian-sky.png",
     stripePriceId: "price_XXXX",
   },
   {
@@ -44,19 +44,19 @@ export const products: Product[] = [
     stripePriceId: "price_XXXX",
   },
   {
-    id: "armaf-arabian-sky",
-    name: "Armaf Eter Arabian Sky",
-    subtitle: "El horizonte infinito del desierto",
+    id: "afnan-zimaya-mazaaj",
+    name: "Afnan Zimaya Mazaaj Infused",
+    subtitle: "El estado de ánimo que te define",
     description:
-      "Armaf, la maison de lujo india fundada en Dubai, captura en Arabian Sky la inmensidad del cielo árabe. Una apertura acuática y fresca de notas marinas y cítricos mediterráneos transiciona hacia un corazón floral-especiado de lavanda y rosa. La base amaderada de sándalo cremoso y almizcle blanco es tan etérea como un atardecer sobre las dunas. Unisex en esencia, universal en presencia.",
+      "Zimaya —sublínea premium de Afnan creada en Dubai— lanza Mazaaj, cuyo nombre en árabe significa 'estado de ánimo'. Infused con aceites esenciales de primer nivel, esta fragancia masculina comienza con una obertura dulce-especiada de canela y azafrán iraní. El corazón amaderado de oud cambodiano y rosa negra crea un dúo hipnótico, mientras la base de ámbar negro y vainilla tahití deja una estela cálida que transforma cada habitación que pisas.",
     notes: {
-      top: ["Notas Marinas", "Bergamota", "Pomelo"],
-      heart: ["Lavanda", "Rosa Turca", "Cardamomo"],
-      base: ["Sándalo Cremoso", "Almizcle Blanco", "Ámbar Gris", "Cedro"],
+      top: ["Azafrán Iraní", "Canela", "Cardamomo"],
+      heart: ["Oud Cambodiano", "Rosa Negra", "Sándalo"],
+      base: ["Ámbar Negro", "Vainilla Tahití", "Almizcle Oscuro", "Pachulí"],
     },
-    price: 990,
+    price: 860,
     volume: "100ml",
-    image: "/perfumes/armaf-arabian-sky.png",
+    image: "/perfumes/afnan-zimaya-mazaaj.png",
     stripePriceId: "price_XXXX",
   },
   {
@@ -73,6 +73,22 @@ export const products: Product[] = [
     price: 989,
     volume: "100ml",
     image: "/perfumes/afnan-rare-reef.png",
+    stripePriceId: "price_XXXX",
+  },
+  {
+    id: "game-of-spades-boston",
+    name: "Game of Spades Boston",
+    subtitle: "El as más oscuro del tablero",
+    description:
+      "Creado por Jo Milano Paris, Game of Spades Boston es una oda al poder y la audacia. Inspirado en el naipe más temido, abre con bergamota chispeante que cede paso a un corazón especiado de pimienta negra y cuero fino. La base de oud y sándalo oscuro lo convierte en una firma implacable para quien juega —y gana— en grande.",
+    notes: {
+      top: ["Bergamota", "Pomelo", "Pimienta Negra"],
+      heart: ["Cuero Fino", "Madera de Oud", "Cardamomo"],
+      base: ["Sándalo Oscuro", "Almizcle Negro", "Ámbar", "Vetiver"],
+    },
+    price: 1575,
+    volume: "100ml",
+    image: "/perfumes/game-of-spades-boston.png",
     stripePriceId: "price_XXXX",
   },
   {
@@ -105,22 +121,6 @@ export const products: Product[] = [
     price: 799,
     volume: "100ml",
     image: "/perfumes/rome-ivory.png",
-    stripePriceId: "price_XXXX",
-  },
-  {
-    id: "afnan-zimaya-mazaaj",
-    name: "Afnan Zimaya Mazaaj Infused",
-    subtitle: "El estado de ánimo que te define",
-    description:
-      "Zimaya —sublínea premium de Afnan creada en Dubai— lanza Mazaaj, cuyo nombre en árabe significa 'estado de ánimo'. Infused con aceites esenciales de primer nivel, esta fragancia masculina comienza con una obertura dulce-especiada de canela y azafrán iraní. El corazón amaderado de oud cambodiano y rosa negra crea un dúo hipnótico, mientras la base de ámbar negro y vainilla tahití deja una estela cálida que transforma cada habitación que pisas.",
-    notes: {
-      top: ["Azafrán Iraní", "Canela", "Cardamomo"],
-      heart: ["Oud Cambodiano", "Rosa Negra", "Sándalo"],
-      base: ["Ámbar Negro", "Vainilla Tahití", "Almizcle Oscuro", "Pachulí"],
-    },
-    price: 860,
-    volume: "100ml",
-    image: "/perfumes/afnan-zimaya-mazaaj.png",
     stripePriceId: "price_XXXX",
   },
   {
