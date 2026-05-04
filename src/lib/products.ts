@@ -101,4 +101,19 @@ export const products: Product[] = [
     image: "/perfumes/layl.jpg",
     stripePriceId: "price_XXXX",
   },
+  {
+    id: "liam-blue-shine",
+    name: "Liam Blue Shine",
+    subtitle: "Elegancia sin límites",
+    description: "Una explosión de frescura mediterránea con corazón especiado y una base amaderada de larga duración. Sofisticación árabe en cada spray.",
+    notes: {
+      top: ["Bergamota", "Limón", "Manzana Verde"],
+      heart: ["Cardamomo", "Lavanda", "Geranio"],
+      base: ["Sándalo", "Almizcle Blanco", "Ámbar", "Cedro"],
+    },
+    price: 1300,
+    volume: "100ml",
+    image: "/perfumes/liam-blue-shine.png",
+    stripePriceId: "price_XXXX",
+  },
 ];
