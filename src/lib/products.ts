@@ -187,4 +187,20 @@ export const products: Product[] = [
     image: "/perfumes/liam-blue-shine.png",
     stripePriceId: "price_XXXX",
   },
+  {
+    id: "zimaya-ithan-noir",
+    name: "Zimaya Ithan Noir",
+    subtitle: "Frescura moderna con fondo elegante",
+    description:
+      "Zimaya Ithan Noir EDP 100ml —también listado por la marca como Itqan Noir— es una fragancia unisex moderna, limpia y versátil. Abre con bergamota luminosa, evoluciona hacia un corazón de flor de azahar y descansa sobre Ambrofix con pachulí, logrando un balance entre frescura cítrica, elegancia floral y profundidad amaderada. Es una opción fácil de usar de día o de noche, ideal para oficina, salidas casuales y ocasiones donde quieres proyectar seguridad sin saturar.",
+    notes: {
+      top: ["Bergamota"],
+      heart: ["Flor de Azahar"],
+      base: ["Ambrofix", "Pachulí"],
+    },
+    price: 750,
+    volume: "100ml",
+    image: "/perfumes/zimaya-ithan-noir.png",
+    stripePriceId: "price_XXXX",
+  },
 ];
