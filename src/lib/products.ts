@@ -12,6 +12,38 @@ export interface Product {
 
 export const products: Product[] = [
   {
+    id: "afnan-9pm-night-out",
+    name: "Afnan 9PM Night Out XDP",
+    subtitle: "La noche te pertenece",
+    description:
+      "Afnan Perfumes —joya fraganciera de los Emiratos Árabes— eleva el concepto de la noche con 9PM Night Out XDP. La concentración XDP (Extra Dense Performance) garantiza una proyección devastadora desde la primera hora hasta el amanecer. Su apertura especiada de cardamomo y lavanda fría seduce al instante, mientras el corazón de iris, cedro y pachulí construye una presencia oscura e irresistible. La base de vainilla negra, sándalo cremoso y almizcle blanco deja una estela cálida que se convierte en tu firma para cada noche de conquista.",
+    notes: {
+      top: ["Cardamomo", "Lavanda", "Bergamota"],
+      heart: ["Iris", "Cedro Atlas", "Pachulí"],
+      base: ["Vainilla Negra", "Sándalo Cremoso", "Almizcle Blanco", "Ámbar"],
+    },
+    price: 1099,
+    volume: "100ml",
+    image: "/perfumes/afnan-9pm-night-out.png",
+    stripePriceId: "price_XXXX",
+  },
+  {
+    id: "lattafa-al-qiam-gold",
+    name: "Lattafa Al Qiam Gold HM",
+    subtitle: "El oro del oud árabe en tu piel",
+    description:
+      "Lattafa Perfumes, fundada en Dubai en 2005 y referente absoluto de la perfumería árabe contemporánea, presenta Al Qiam Gold HM —cuyo nombre en árabe evoca los valores más elevados—. Esta joya olfativa masculina abre con una explosión de azafrán iraní y especias doradas que anuncian riqueza desde el primer segundo. El corazón de oud camboyano y rosa turca forma un dúo imperial de profundidad oriental sin igual. La base de ámbar dorado, benjuí y almizcle oscuro crea una estela envolvente con hasta 12 horas de proyección: el perfume para quien entiende que la elegancia es un idioma universal.",
+    notes: {
+      top: ["Azafrán Iraní", "Canela Dorada", "Cardamomo"],
+      heart: ["Oud Camboyano", "Rosa Turca", "Incienso"],
+      base: ["Ámbar Dorado", "Benjuí", "Almizcle Oscuro", "Sándalo"],
+    },
+    price: 979,
+    volume: "100ml",
+    image: "/perfumes/lattafa-al-qiam-gold.png",
+    stripePriceId: "price_XXXX",
+  },
+  {
     id: "armaf-arabian-sky",
     name: "Armaf Eter Arabian Sky",
     subtitle: "El horizonte infinito del desierto",
