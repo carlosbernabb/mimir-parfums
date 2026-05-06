@@ -203,9 +203,11 @@ export default function ProductModal({ product, onClose, color }: ProductModalPr
                   className="font-display"
                   style={{
                     fontSize: "0.9rem",
-                    color: "rgba(245,240,232,0.38)",
+                    color: "#d21f3c",
                     letterSpacing: "0.02em",
                     textDecoration: "line-through",
+                    textDecorationThickness: 2,
+                    textDecorationColor: "#d21f3c",
                     marginBottom: 2,
                   }}
                 >

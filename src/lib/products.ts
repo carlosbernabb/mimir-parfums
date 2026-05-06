@@ -15,6 +15,25 @@ export interface Product {
 
 export const products: Product[] = [
   {
+    id: "lattafa-haya-for-women",
+    name: "Lattafa Haya for Women",
+    subtitle: "Feminidad radiante en oferta",
+    description:
+      "Lattafa Haya for Women Eau de Parfum es una fragancia femenina de 100ml lanzada en 2022, pensada para una mujer luminosa, alegre y elegante. Su apertura burbujeante mezcla champagne, fresa, rosa, mandarina y naranja sanguina con un brillo frutal muy coqueto. En el corazón florecen gardenia, jazmín y orquídea de vainilla, mientras la base de ámbar, sándalo y castaña deja una estela cálida, cremosa y chic para uso diario o una salida especial.",
+    notes: {
+      top: ["Champagne", "Fresa", "Rosa", "Mandarina", "Naranja Sanguina"],
+      heart: ["Gardenia", "Jazmín", "Orquídea de Vainilla"],
+      base: ["Ámbar", "Sándalo", "Castaña"],
+    },
+    price: 650,
+    originalPrice: 750,
+    saleLabel: "Oferta especial",
+    saleEnds: "Hasta el 10 de mayo",
+    volume: "100ml",
+    image: "/perfumes/lattafa-haya-for-women.png",
+    stripePriceId: "price_XXXX",
+  },
+  {
     id: "afnan-9pm-night-out",
     name: "Afnan 9PM Night Out XDP",
     subtitle: "La noche te pertenece",
@@ -188,25 +207,6 @@ export const products: Product[] = [
     price: 749,
     volume: "100ml",
     image: "/perfumes/liam-blue-shine.png",
-    stripePriceId: "price_XXXX",
-  },
-  {
-    id: "lattafa-haya-for-women",
-    name: "Lattafa Haya for Women",
-    subtitle: "Feminidad radiante en oferta",
-    description:
-      "Lattafa Haya for Women Eau de Parfum es una fragancia femenina de 100ml lanzada en 2022, pensada para una mujer luminosa, alegre y elegante. Su apertura burbujeante mezcla champagne, fresa, rosa, mandarina y naranja sanguina con un brillo frutal muy coqueto. En el corazón florecen gardenia, jazmín y orquídea de vainilla, mientras la base de ámbar, sándalo y castaña deja una estela cálida, cremosa y chic para uso diario o una salida especial.",
-    notes: {
-      top: ["Champagne", "Fresa", "Rosa", "Mandarina", "Naranja Sanguina"],
-      heart: ["Gardenia", "Jazmín", "Orquídea de Vainilla"],
-      base: ["Ámbar", "Sándalo", "Castaña"],
-    },
-    price: 650,
-    originalPrice: 750,
-    saleLabel: "Oferta especial",
-    saleEnds: "Hasta el 10 de mayo",
-    volume: "100ml",
-    image: "/perfumes/lattafa-haya-for-women.png",
     stripePriceId: "price_XXXX",
   },
   {

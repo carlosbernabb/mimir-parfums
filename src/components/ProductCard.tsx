@@ -130,17 +130,18 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                 position: "absolute",
                 top: 12,
                 left: 12,
-                background: "linear-gradient(135deg, #c9a84c 0%, #f1d778 100%)",
-                color: "#140f05",
-                padding: "4px 9px",
-                fontSize: "0.52rem",
+                background: "linear-gradient(135deg, #c91538 0%, #f1d778 100%)",
+                color: "#fff7dc",
+                padding: "8px 12px",
+                fontSize: "0.68rem",
                 fontFamily: "'Cinzel', serif",
-                letterSpacing: "0.14em",
+                letterSpacing: "0.13em",
                 textTransform: "uppercase",
-                boxShadow: "0 8px 24px rgba(201,168,76,0.25)",
+                boxShadow: "0 12px 30px rgba(201,21,56,0.35)",
+                border: "1px solid rgba(255,247,220,0.22)",
               }}
             >
-              -${savings.toLocaleString()}
+              Ahorra ${savings.toLocaleString()}
             </div>
           )}
         </div>
@@ -180,9 +181,11 @@ export default function ProductCard({ product, index }: ProductCardProps) {
                   <span
                     style={{
                       fontFamily: "'Cinzel', serif",
-                      fontSize: "0.72rem",
-                      color: "rgba(245,240,232,0.36)",
+                      fontSize: "0.82rem",
+                      color: "#d21f3c",
                       textDecoration: "line-through",
+                      textDecorationThickness: 2,
+                      textDecorationColor: "#d21f3c",
                     }}
                   >
                     ${product.originalPrice?.toLocaleString()}
