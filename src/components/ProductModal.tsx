@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Product } from "@/lib/products";
 import { useCart } from "@/lib/cart-store";
@@ -16,6 +16,15 @@ export default function ProductModal({ product, onClose, color }: ProductModalPr
   const [added, setAdded] = useState(false);
   const { addItem, openCart } = useCart();
   const hasOffer = product.originalPrice && product.originalPrice > product.price;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   const handleAddAndOpen = () => {
     addItem(product);
@@ -48,8 +57,53 @@ export default function ProductModal({ product, onClose, color }: ProductModalPr
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle bar */}
-        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
-          <div style={{ width: 40, height: 3, background: "rgba(201,168,76,0.2)", borderRadius: 2 }} />
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 2,
+            display: "flex",
+            justifyContent: "center",
+            padding: "14px 56px 10px",
+            background: "linear-gradient(180deg, #111111 0%, rgba(17,17,17,0.92) 100%)",
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Cerrar detalles"
+            onClick={onClose}
+            style={{
+              position: "absolute",
+              inset: 0,
+              border: "none",
+              background: "transparent",
+              padding: 0,
+              cursor: "pointer",
+            }}
+          />
+          <div style={{ width: 58, height: 4, background: "rgba(201,168,76,0.36)", borderRadius: 2, zIndex: 1 }} />
+          <button
+            type="button"
+            aria-label="Cerrar detalles"
+            onClick={onClose}
+            style={{
+              position: "absolute",
+              top: 7,
+              right: 12,
+              zIndex: 2,
+              width: 34,
+              height: 34,
+              border: "1px solid rgba(201,168,76,0.22)",
+              borderRadius: "50%",
+              background: "rgba(0,0,0,0.36)",
+              color: "var(--cream)",
+              fontSize: "1.2rem",
+              lineHeight: 1,
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
         </div>
 
         {/* Image area */}
