@@ -33,6 +33,8 @@ export default function ProductCard({ product, index }: ProductCardProps) {
     { bg: "#0d080d", accent: "#3d0a3d" },
   ];
   const colors = perfumeColors[index % perfumeColors.length];
+  const hasOffer = product.originalPrice && product.originalPrice > product.price;
+  const savings = hasOffer ? product.originalPrice! - product.price : 0;
 
   return (
     <>
@@ -121,6 +123,26 @@ export default function ProductCard({ product, index }: ProductCardProps) {
           >
             {product.volume}
           </div>
+
+          {hasOffer && (
+            <div
+              style={{
+                position: "absolute",
+                top: 12,
+                left: 12,
+                background: "linear-gradient(135deg, #c9a84c 0%, #f1d778 100%)",
+                color: "#140f05",
+                padding: "4px 9px",
+                fontSize: "0.52rem",
+                fontFamily: "'Cinzel', serif",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                boxShadow: "0 8px 24px rgba(201,168,76,0.25)",
+              }}
+            >
+              -${savings.toLocaleString()}
+            </div>
+          )}
         </div>
 
         {/* Info */}
@@ -151,17 +173,43 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
           <div className="gold-line" style={{ marginBottom: 12 }} />
 
-          <div className="flex items-center justify-between">
-            <span
-              style={{
-                fontFamily: "'Cinzel', serif",
-                fontSize: "1rem",
-                color: "var(--cream)",
-                letterSpacing: "0.02em",
-              }}
-            >
-              ${product.price.toLocaleString()} <span style={{ fontSize: "0.6rem", color: "var(--cream-dim)" }}>MXN</span>
-            </span>
+          <div className="flex items-center justify-between" style={{ gap: 12 }}>
+            <div>
+              {hasOffer && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                  <span
+                    style={{
+                      fontFamily: "'Cinzel', serif",
+                      fontSize: "0.72rem",
+                      color: "rgba(245,240,232,0.36)",
+                      textDecoration: "line-through",
+                    }}
+                  >
+                    ${product.originalPrice?.toLocaleString()}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "0.48rem",
+                      color: "var(--gold)",
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {product.saleEnds}
+                  </span>
+                </div>
+              )}
+              <span
+                style={{
+                  fontFamily: "'Cinzel', serif",
+                  fontSize: hasOffer ? "1.12rem" : "1rem",
+                  color: "var(--cream)",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                ${product.price.toLocaleString()} <span style={{ fontSize: "0.6rem", color: "var(--cream-dim)" }}>MXN</span>
+              </span>
+            </div>
             <button
               className="btn-primary"
               style={{ padding: "8px 16px", fontSize: "0.58rem" }}
@@ -183,4 +231,3 @@ export default function ProductCard({ product, index }: ProductCardProps) {
     </>
   );
 }
-

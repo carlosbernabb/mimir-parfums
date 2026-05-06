@@ -15,6 +15,7 @@ interface ProductModalProps {
 export default function ProductModal({ product, onClose, color }: ProductModalProps) {
   const [added, setAdded] = useState(false);
   const { addItem, openCart } = useCart();
+  const hasOffer = product.originalPrice && product.originalPrice > product.price;
 
   const handleAddAndOpen = () => {
     addItem(product);
@@ -97,6 +98,30 @@ export default function ProductModal({ product, onClose, color }: ProductModalPr
             <p style={{ fontSize: "0.8rem", color: "var(--cream-dim)", fontStyle: "italic" }}>
               {product.volume} · Eau de Parfum
             </p>
+            {hasOffer && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginTop: 12,
+                  padding: "6px 10px",
+                  background: "rgba(201,168,76,0.12)",
+                  border: "1px solid rgba(201,168,76,0.28)",
+                  color: "var(--gold)",
+                  fontSize: "0.58rem",
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  fontFamily: "'Cinzel', serif",
+                }}
+              >
+                <span>{product.saleLabel}</span>
+                <span style={{ color: "rgba(245,240,232,0.5)" }}>
+                  Ahorra ${((product.originalPrice ?? 0) - product.price).toLocaleString()}
+                </span>
+                <span>{product.saleEnds}</span>
+              </div>
+            )}
           </div>
 
           <div className="gold-line" style={{ marginBottom: 16 }} />
@@ -173,6 +198,20 @@ export default function ProductModal({ product, onClose, color }: ProductModalPr
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div>
               <p style={{ fontSize: "0.55rem", color: "var(--cream-dim)", letterSpacing: "0.1em" }}>Precio</p>
+              {hasOffer && (
+                <p
+                  className="font-display"
+                  style={{
+                    fontSize: "0.9rem",
+                    color: "rgba(245,240,232,0.38)",
+                    letterSpacing: "0.02em",
+                    textDecoration: "line-through",
+                    marginBottom: 2,
+                  }}
+                >
+                  ${product.originalPrice?.toLocaleString()} MXN
+                </p>
+              )}
               <p
                 className="font-display"
                 style={{ fontSize: "1.5rem", letterSpacing: "0.02em" }}
