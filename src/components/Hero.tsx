@@ -1,95 +1,181 @@
 "use client";
 
+import Image from "next/image";
+
+const trustBadges = ["Originales", "Envíos a México", "Pago seguro", "Fragancias virales"];
+
 export default function Hero() {
   return (
     <section
       className="relative arabic-pattern-bg overflow-hidden"
       style={{
-        minHeight: "72vh",
+        minHeight: "calc(100vh - 68px)",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
         justifyContent: "center",
         background: "transparent",
-        padding: "60px 24px",
+        padding: "28px 20px 34px",
       }}
     >
-      {/* Decorative top line */}
       <div
         className="absolute top-0 left-0 right-0"
-        style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(139,26,26,0.35), transparent)" }}
+        style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(139,26,26,0.35), transparent)" }}
       />
 
-      <div className="relative z-10 flex flex-col items-center gap-6 text-center">
-        {/* Logo PNG en lugar del rombo */}
-        <div className="animate-float" style={{ filter: "drop-shadow(0 0 40px rgba(196,30,58,0.45))" }}>
-          <img
-            src="/MIMIR_LOGO-Photoroom.png"
-            alt="MIMIR Parfums"
-            style={{ width: 140, display: "block" }}
-          />
-        </div>
+      <div
+        className="absolute"
+        style={{
+          inset: "7% 8% auto",
+          height: 360,
+          background: "radial-gradient(ellipse at center, rgba(196,30,58,0.16), transparent 68%)",
+          filter: "blur(10px)",
+          animation: "scentPulse 6s ease-in-out infinite",
+        }}
+      />
 
-        <div className="animate-fade-up" style={{ animationDelay: "0.1s", opacity: 0 }}>
-          <p
-            className="font-display"
+      <div className="relative z-10">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 0.82fr", gap: 10, alignItems: "center" }}>
+          <div className="animate-fade-up" style={{ opacity: 0 }}>
+            <p
+              className="font-display"
+              style={{
+                fontSize: "0.56rem",
+                letterSpacing: "0.32em",
+                color: "var(--gold)",
+                textTransform: "uppercase",
+                marginBottom: 12,
+              }}
+            >
+              Perfumes árabes originales
+            </p>
+            <h1
+              className="font-display"
+              style={{
+                fontSize: "clamp(2rem, 9vw, 3.3rem)",
+                fontWeight: 500,
+                lineHeight: 1,
+                letterSpacing: "0.03em",
+                marginBottom: 14,
+                textShadow: "0 0 60px rgba(0,0,0,0.9)",
+              }}
+            >
+              Lujo que se nota antes de hablar
+            </h1>
+            <p
+              style={{
+                fontSize: "1rem",
+                color: "rgba(245,240,232,0.72)",
+                lineHeight: 1.55,
+                maxWidth: 320,
+                marginBottom: 14,
+              }}
+            >
+              Fragancias intensas, elegantes y de larga duración. Desde{" "}
+              <span style={{ color: "var(--gold-light)", fontWeight: 700 }}>$650 MXN</span>.
+            </p>
+          </div>
+
+          <div
+            className="animate-float"
             style={{
-              fontSize: "0.58rem",
-              letterSpacing: "0.42em",
-              color: "var(--gold)",
-              textTransform: "uppercase",
-              marginBottom: 16,
+              position: "relative",
+              minHeight: 270,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            Colección Exclusiva
-          </p>
-          <h1
-            className="font-display"
-            style={{
-              fontSize: "clamp(2.2rem, 8vw, 3.5rem)",
-              fontWeight: 400,
-              lineHeight: 1.1,
-              letterSpacing: "0.05em",
-              marginBottom: 20,
-              textShadow: "0 0 60px rgba(0,0,0,0.8)",
-            }}
-          >
-            El Arte del
-            <br />
-            <span style={{ color: "var(--crimson-bright)", fontStyle: "italic" }}>Perfume Árabe</span>
-          </h1>
+            <div
+              style={{
+                position: "absolute",
+                width: 210,
+                height: 210,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(201,168,76,0.18), transparent 66%)",
+              }}
+            />
+            <Image
+              src="/perfumes/lattafa-haya-for-women.png"
+              alt="Lattafa Haya for Women"
+              width={230}
+              height={230}
+              priority
+              style={{
+                objectFit: "contain",
+                maxWidth: "100%",
+                height: "auto",
+                filter: "drop-shadow(0 28px 34px rgba(0,0,0,0.55))",
+              }}
+            />
+            <div
+              className="font-display"
+              style={{
+                position: "absolute",
+                bottom: 20,
+                left: "50%",
+                transform: "translateX(-50%)",
+                whiteSpace: "nowrap",
+                background: "rgba(8,8,8,0.72)",
+                border: "1px solid rgba(201,168,76,0.28)",
+                color: "var(--gold)",
+                padding: "7px 10px",
+                fontSize: "0.54rem",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                backdropFilter: "blur(10px)",
+              }}
+            >
+              Oferta hasta 10 mayo
+            </div>
+          </div>
         </div>
 
-        <div className="animate-fade-up" style={{ animationDelay: "0.3s", opacity: 0 }}>
-          <p
+        <div className="animate-fade-up" style={{ animationDelay: "0.15s", opacity: 0 }}>
+          <div style={{ display: "flex", gap: 10, margin: "10px 0 18px" }}>
+            <a href="#collection" style={{ flex: 1 }}>
+              <button className="btn-primary" style={{ width: "100%", padding: "14px 12px" }}>
+                Comprar ahora
+              </button>
+            </a>
+            <a href="#scent-guide" style={{ flex: 1 }}>
+              <button className="btn-gold" style={{ width: "100%", padding: "13px 10px" }}>
+                Elegir aroma
+              </button>
+            </a>
+          </div>
+
+          <div
             style={{
-              fontSize: "1.05rem",
-              color: "rgba(245,240,232,0.58)",
-              fontStyle: "italic",
-              marginTop: 16,
-              lineHeight: 1.7,
-              maxWidth: 340,
-              textShadow: "0 2px 20px rgba(0,0,0,0.9)",
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 8,
             }}
           >
-            Fragancias nacidas del misterio oriental,<br />
-            diseñadas para quienes no pasan desapercibidos.
-          </p>
-        </div>
-
-        <div className="animate-fade-up" style={{ animationDelay: "0.5s", opacity: 0 }}>
-          <a href="#collection">
-            <button className="btn-primary" style={{ marginTop: 8 }}>
-              Explorar Colección
-            </button>
-          </a>
+            {trustBadges.map((badge) => (
+              <div
+                key={badge}
+                className="font-display"
+                style={{
+                  border: "1px solid rgba(201,168,76,0.14)",
+                  background: "rgba(255,255,255,0.025)",
+                  color: "rgba(245,240,232,0.78)",
+                  padding: "9px 8px",
+                  textAlign: "center",
+                  fontSize: "0.55rem",
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {badge}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Bottom fade into rest of page — transparent so bg shows through */}
       <div
         className="absolute bottom-0 left-0 right-0"
-        style={{ height: 70, background: "linear-gradient(to bottom, transparent, rgba(8,8,8,0.4))" }}
+        style={{ height: 70, background: "linear-gradient(to bottom, transparent, rgba(8,8,8,0.5))" }}
       />
     </section>
   );

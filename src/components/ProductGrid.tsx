@@ -5,7 +5,7 @@ import ProductCard from "./ProductCard";
 
 export default function ProductGrid() {
   return (
-    <section id="collection" style={{ padding: "48px 0 64px" }}>
+    <section id="collection" style={{ padding: "34px 0 64px" }}>
       {/* Section header */}
       <div style={{ textAlign: "center", marginBottom: 40, padding: "0 24px" }}>
         <p
@@ -18,7 +18,7 @@ export default function ProductGrid() {
             marginBottom: 12,
           }}
         >
-          Nuestra Colección
+          Best sellers y ofertas
         </p>
         <h2
           className="font-display"
@@ -29,7 +29,7 @@ export default function ProductGrid() {
             marginBottom: 16,
           }}
         >
-          Parfums Seleccionados
+          Elige tu perfume
         </h2>
         <div className="ornament-line" style={{ maxWidth: 280, margin: "0 auto" }}>
           <span style={{ color: "var(--gold)", fontSize: "0.7rem" }}>◆</span>
@@ -64,7 +64,7 @@ export default function ProductGrid() {
           padding: "0 24px",
         }}
       >
-        Todos los perfumes son Eau de Parfum de alta concentración
+        Toca cualquier perfume para ver notas, descripción y agregarlo al carrito.
       </p>
     </section>
   );
