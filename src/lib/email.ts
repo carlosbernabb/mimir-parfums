@@ -2,11 +2,16 @@ import nodemailer from "nodemailer";
 import { Order, STATUS_LABELS } from "./orders";
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // STARTTLS — más rápido que port 465 en entornos serverless
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD,
   },
+  connectionTimeout: 8000,  // 8s máx para conectar
+  greetingTimeout: 8000,
+  socketTimeout: 8000,
 });
 
 const ADMIN_EMAILS = [

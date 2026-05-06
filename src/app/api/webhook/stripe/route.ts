@@ -4,6 +4,9 @@ import { supabase } from "@/lib/supabase";
 import { sendNewOrderToAdmin, sendConfirmationToCustomer } from "@/lib/email";
 import { Order } from "@/lib/orders";
 
+// Aumentar límite de tiempo en Vercel (máx 60s en plan Pro, 10s en Hobby)
+export const maxDuration = 60;
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
 });
@@ -47,8 +50,10 @@ export async function POST(req: NextRequest) {
         sendNewOrderToAdmin(order as Order),
         sendConfirmationToCustomer(order as Order),
       ]);
+      console.log(`Emails enviados correctamente para orden ${orderId}`);
     } catch (emailErr) {
-      console.error("Email error:", emailErr);
+      // Error capturado — el webhook igual devuelve 200 para que Stripe no reintente
+      console.error("Email error para orden", orderId, ":", JSON.stringify(emailErr, Object.getOwnPropertyNames(emailErr)));
     }
   }
 
