@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [loginError, setLoginError] = useState("");
+  const [emailAction, setEmailAction] = useState<string | null>(null);
 
   // Per-order ship form state
   const [shipForm, setShipForm] = useState<Record<string, { carrier: string; tracking: string; url: string }>>({});
@@ -106,6 +107,43 @@ export default function AdminPage() {
     }
   }
 
+  async function handleSendRetryEmails() {
+    if (!token) return;
+    if (!confirm("¿Enviar correo con código DANKEST a todos los pedidos pendientes de pago?")) return;
+    setEmailAction("retry");
+    try {
+      const res = await fetch("/api/admin/send-retry-emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      alert(`✓ Enviados: ${data.sent} · Fallidos: ${data.failed}`);
+    } catch {
+      alert("Error al enviar correos");
+    } finally {
+      setEmailAction(null);
+    }
+  }
+
+  async function handleResendConfirmations() {
+    if (!token) return;
+    if (!confirm("¿Reenviar correos de confirmación a todos los pedidos con pago confirmado?")) return;
+    setEmailAction("confirm");
+    try {
+      const res = await fetch("/api/admin/resend-confirmations", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      alert(`✓ Enviados: ${data.sent} · Fallidos: ${data.failed}`);
+    } catch {
+      alert("Error al enviar correos");
+    } finally {
+      setEmailAction(null);
+    }
+  }
+
   function formatDate(iso: string) {
     return new Date(iso).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short", timeZone: "America/Mexico_City" });
   }
@@ -147,9 +185,23 @@ export default function AdminPage() {
             <p className="font-display" style={{ fontSize: "0.5rem", letterSpacing: "0.3em", color: gold, textTransform: "uppercase", marginBottom: 2 }}>MIMIR PARFUMS</p>
             <h1 className="font-display" style={{ fontSize: "1.3rem", fontWeight: 400 }}>Panel de Pedidos</h1>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button onClick={() => loadOrders(token, filter)} style={{ background: "transparent", border: "1px solid rgba(201,168,76,0.2)", color: gold, padding: "8px 14px", cursor: "pointer", fontSize: "0.65rem", fontFamily: "'Cinzel', serif" }}>
               ↻ Actualizar
+            </button>
+            <button
+              onClick={handleResendConfirmations}
+              disabled={!!emailAction}
+              style={{ background: "rgba(100,200,100,0.07)", border: "1px solid rgba(100,200,100,0.25)", color: "rgba(120,220,120,0.9)", padding: "8px 14px", cursor: "pointer", fontSize: "0.6rem", fontFamily: "'Cinzel', serif" }}
+            >
+              {emailAction === "confirm" ? "Enviando..." : "✉ Reenviar Confirmaciones"}
+            </button>
+            <button
+              onClick={handleSendRetryEmails}
+              disabled={!!emailAction}
+              style={{ background: "rgba(245,200,80,0.07)", border: "1px solid rgba(245,200,80,0.25)", color: "rgba(245,200,80,0.9)", padding: "8px 14px", cursor: "pointer", fontSize: "0.6rem", fontFamily: "'Cinzel', serif" }}
+            >
+              {emailAction === "retry" ? "Enviando..." : "⚡ Enviar DANKEST a Pendientes"}
             </button>
             <button onClick={() => { localStorage.removeItem("mimir_admin_token"); setToken(null); }} style={{ background: "transparent", border: "1px solid rgba(245,240,232,0.08)", color: "rgba(245,240,232,0.3)", padding: "8px 14px", cursor: "pointer", fontSize: "0.65rem", fontFamily: "'Cinzel', serif" }}>
               Salir

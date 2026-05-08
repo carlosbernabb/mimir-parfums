@@ -238,6 +238,49 @@ export async function sendStatusUpdateToCustomer(
   });
 }
 
+// ─── Retry payment ────────────────────────────────────────────────────────────
+
+export async function sendRetryPaymentEmail(order: Order): Promise<void> {
+  const shopUrl = BASE_URL;
+  const discountCode = "DANKEST";
+
+  const body = `
+    <div style="text-align:center;margin-bottom:32px;">
+      <p style="margin:0 0 10px;font-size:14px;color:rgba(245,240,232,0.65);font-style:italic;">Hola, ${order.shipping.nombre.split(" ")[0]}.</p>
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:normal;color:#f5f0e8;">Tu pedido quedó pendiente</h1>
+      <p style="margin:0;font-size:14px;color:rgba(245,240,232,0.5);font-style:italic;">Notamos que no se completó el proceso de pago para tu fragancia.</p>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(201,168,76,0.1);padding:20px 20px 12px;margin-bottom:24px;border-radius:2px;">
+      ${itemsTable(order)}
+    </div>
+
+    <div style="background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.25);padding:24px;margin-bottom:24px;border-radius:2px;text-align:center;">
+      <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.25em;color:${gold};text-transform:uppercase;font-family:'Georgia',serif;">Tu código exclusivo</p>
+      <p style="margin:6px 0;font-size:36px;letter-spacing:0.25em;color:#f5f0e8;font-family:'Georgia',serif;">${discountCode}</p>
+      <p style="margin:8px 0 0;font-size:13px;color:rgba(245,240,232,0.55);font-style:italic;">Aplica <strong style="color:${gold};">5% de descuento</strong> + envío gratis en tu próxima compra</p>
+    </div>
+
+    <div style="text-align:center;margin:28px 0 24px;">
+      <a href="${shopUrl}" style="display:inline-block;padding:13px 32px;background:${gold};color:#0c0c0c;text-decoration:none;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;font-family:'Georgia',serif;border-radius:2px;">
+        Volver a la Tienda →
+      </a>
+    </div>
+
+    <p style="margin:0;font-size:12px;color:rgba(245,240,232,0.3);text-align:center;line-height:1.9;font-style:italic;">
+      El código <strong style="color:rgba(245,240,232,0.5);">${discountCode}</strong> se aplica automáticamente en el carrito.<br>
+      ¿Tienes preguntas? Responde este correo y te ayudamos.
+    </p>
+  `;
+
+  await transporter.sendMail({
+    from: `"MIMIR Parfums" <${SENDER}>`,
+    to: order.customer_email,
+    subject: `¡Tu fragancia te espera, ${order.shipping.nombre.split(" ")[0]}! — Código DANKEST −5%`,
+    html: emailWrapper(body),
+  });
+}
+
 // ─── Contact form ─────────────────────────────────────────────────────────────
 
 export async function sendContactToAdmin(

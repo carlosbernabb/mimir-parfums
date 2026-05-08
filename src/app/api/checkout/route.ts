@@ -9,7 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, shipping, discountApplied } = await req.json();
+    const { items, shipping, discountApplied, discountPercent = 0 } = await req.json();
 
     if (!items?.length) {
       return NextResponse.json({ error: "Carrito vacío" }, { status: 400 });
@@ -22,8 +22,9 @@ export async function POST(req: NextRequest) {
       (sum: number, i: { price: number; quantity: number }) => sum + i.price * i.quantity,
       0
     );
+    const discountAmountMxn = discountPercent > 0 ? Math.round(subtotalMxn * discountPercent / 100) : 0;
     const shippingMxn = (discountApplied || subtotalMxn >= FREE_SHIPPING_THRESHOLD) ? 0 : SHIPPING_COST;
-    const totalMxn = subtotalMxn + shippingMxn;
+    const totalMxn = subtotalMxn - discountAmountMxn + shippingMxn;
 
     // Generate unique order ID (retry if collision)
     let orderId = generateOrderId();
@@ -52,15 +53,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Error al crear el pedido" }, { status: 500 });
     }
 
+    const discountMultiplier = discountPercent > 0 ? (1 - discountPercent / 100) : 1;
+
     const lineItems: object[] = items.map((item: { name: string; price: number; quantity: number }) => ({
       price_data: {
         currency: "mxn",
         product_data: {
-          name: `MIMIR Parfums — ${item.name}`,
+          name: `MIMIR Parfums — ${item.name}${discountPercent > 0 ? ` (−${discountPercent}%)` : ""}`,
           description: "Eau de Parfum 30ml",
           images: [`${process.env.NEXT_PUBLIC_URL}/MIMIR_LOGO.png`],
         },
-        unit_amount: item.price * 100,
+        unit_amount: Math.round(item.price * discountMultiplier) * 100,
       },
       quantity: item.quantity,
     }));

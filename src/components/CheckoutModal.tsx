@@ -29,7 +29,7 @@ const ESTADOS = [
 ];
 
 export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
-  const { items, subtotal, shipping: shippingCost, total, clearCart, discountApplied } = useCart();
+  const { items, subtotal, shipping: shippingCost, total, clearCart, discountApplied, discountPercent, discountAmount } = useCart();
   const [step, setStep] = useState<"shipping" | "payment" | "success">("shipping");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -58,6 +58,7 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
           items: items.map((i) => ({ id: i.product.id, name: i.product.name, price: i.product.price, quantity: i.quantity })),
           shipping,
           discountApplied,
+          discountPercent,
         }),
       });
       const data = await res.json();
@@ -218,10 +219,10 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
                     <span style={{ fontSize: "0.78rem", color: "var(--cream-dim)", fontFamily: "'Cinzel', serif" }}>${SHIPPING_COST.toLocaleString()} MXN</span>
                   )}
                 </div>
-                {discountApplied && (
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.8)", fontStyle: "italic" }}>✓ Código de descuento</span>
-                    <span style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.8)", fontFamily: "'Cinzel', serif" }}>−${SHIPPING_COST.toLocaleString()} MXN</span>
+                {discountApplied && discountAmount() > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.8)", fontStyle: "italic" }}>✓ Descuento {discountPercent}%</span>
+                    <span style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.8)", fontFamily: "'Cinzel', serif" }}>−${discountAmount().toLocaleString()} MXN</span>
                   </div>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

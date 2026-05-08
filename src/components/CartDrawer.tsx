@@ -6,7 +6,7 @@ import { useCart, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/cart-stor
 import CheckoutModal from "./CheckoutModal";
 
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, removeItem, updateQuantity, subtotal, shipping, total, count, discountApplied, applyDiscount, removeDiscount } = useCart();
+  const { items, isOpen, closeCart, removeItem, updateQuantity, subtotal, shipping, total, count, discountApplied, discountPercent, discountAmount, applyDiscount, removeDiscount } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
   const [discountError, setDiscountError] = useState(false);
@@ -251,7 +251,7 @@ export default function CartDrawer() {
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, padding: "8px 12px", background: "rgba(100,200,100,0.06)", border: "1px solid rgba(100,200,100,0.2)" }}>
                     <p style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.9)", fontFamily: "'Cinzel', serif", letterSpacing: "0.06em" }}>
-                      ✓ Código aplicado
+                      ✓ {discountPercent > 0 ? `Descuento ${discountPercent}% aplicado` : "Envío gratis aplicado"}
                     </p>
                     <button
                       onClick={removeDiscount}
@@ -312,6 +312,18 @@ export default function CartDrawer() {
                     ${subtotal().toLocaleString()} MXN
                   </span>
                 </div>
+
+                {/* Discount amount */}
+                {discountAmount() > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: "0.78rem", color: "rgba(120,220,120,0.85)", fontStyle: "italic" }}>
+                      Descuento {discountPercent}%
+                    </span>
+                    <span style={{ fontSize: "0.78rem", color: "rgba(120,220,120,0.85)", fontFamily: "'Cinzel', serif" }}>
+                      −${discountAmount().toLocaleString()} MXN
+                    </span>
+                  </div>
+                )}
 
                 {/* Shipping */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
