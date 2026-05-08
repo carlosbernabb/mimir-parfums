@@ -1,8 +1,6 @@
 import { Resend } from "resend";
 import { Order, STATUS_LABELS } from "./orders";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const ADMIN_EMAILS = [
   "carbebezu.10@gmail.com",
   "sinfantea@gmail.com",
@@ -89,6 +87,7 @@ function formatDate(iso: string): string {
 }
 
 async function send(to: string | string[], subject: string, html: string, replyTo?: string) {
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const { error } = await resend.emails.send({
     from: FROM,
     to: Array.isArray(to) ? to : [to],
