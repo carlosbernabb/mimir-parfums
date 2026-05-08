@@ -5,40 +5,59 @@ const reviews = [
     name: "Carlos M.",
     city: "Monterrey",
     perfume: "Afnan 9PM Night Out",
-    text: "Me paran en la calle a preguntar qué perfume traigo. Literalmente cada vez que salgo. Vale cada peso, no lo cambio por nada.",
+    text: "me paran en la calle a preguntar que perfume traigo jajaja, vale lo que cuesta",
     stars: 5,
   },
   {
     name: "Fernanda R.",
     city: "CDMX",
     perfume: "Lattafa Haya for Women",
-    text: "Llegó súper bien empacado y el aroma dura todo el día sin retoques. Ya pedí el segundo frasco, esta vez para regalar.",
-    stars: 5,
+    text: "llegó bien empacado, el olor dura bastante sin reaplicar, ya lo compré 2 veces la verdad",
+    stars: 4,
   },
   {
     name: "Diego S.",
     city: "Guadalajara",
     perfume: "Lattafa Al Qiam Gold",
-    text: "Pensé que era exagerado pagar esto por un perfume árabe pero con la primera aplicación entendí todo. Proyecta brutal.",
-    stars: 5,
+    text: "honestamente pensé que no iba a durar tanto pero me sorprendió, la proyección es real. solo le quito una estrella porque tardó un poco el envío pero el perfume esta muy bueno",
+    stars: 3.5,
   },
   {
     name: "Paola V.",
     city: "Puebla",
     perfume: "Armaf Eter Arabian Sky",
-    text: "Es el perfume más elegante que he tenido. Lo uso para trabajar y me han preguntado si es de diseñador europeo.",
+    text: "me lo regalaron y desde la primera vez que lo use no lo he soltado!! todos me preguntan cual es, lo recomiendo mucho",
     stars: 5,
   },
   {
     name: "Andrés T.",
     city: "Querétaro",
     perfume: "Afnan Zimaya Mazaaj",
-    text: "El envío fue rapidísimo, en 3 días llegó. El perfume es exactamente como lo describen, muy intenso y de larga duración.",
-    stars: 5,
+    text: "de esos perfumes que se quedan contigo todo el dia sin reaplicar, lo compré para mi cumpleaños y no me arrepiento",
+    stars: 4.5,
   },
 ];
 
 const gold = "#C9A84C";
+
+function StarRating({ stars }: { stars: number }) {
+  const full = Math.floor(stars);
+  const half = stars % 1 >= 0.5;
+  const empty = 5 - full - (half ? 1 : 0);
+  return (
+    <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+      {Array.from({ length: full }).map((_, i) => (
+        <span key={`f${i}`} style={{ color: gold, fontSize: "0.7rem" }}>★</span>
+      ))}
+      {half && (
+        <span style={{ color: gold, fontSize: "0.7rem", opacity: 0.7 }}>★</span>
+      )}
+      {Array.from({ length: empty }).map((_, i) => (
+        <span key={`e${i}`} style={{ color: "rgba(201,168,76,0.25)", fontSize: "0.7rem" }}>★</span>
+      ))}
+    </div>
+  );
+}
 
 export default function Reviews() {
   return (
@@ -65,7 +84,7 @@ export default function Reviews() {
             margin: 0,
           }}
         >
-          Reseñas reales
+          Reseñas
         </h2>
         <div
           style={{
@@ -98,11 +117,7 @@ export default function Reviews() {
                   {r.city} · {r.perfume}
                 </p>
               </div>
-              <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                {Array.from({ length: r.stars }).map((_, s) => (
-                  <span key={s} style={{ color: gold, fontSize: "0.7rem" }}>★</span>
-                ))}
-              </div>
+              <StarRating stars={r.stars} />
             </div>
             <p
               style={{
