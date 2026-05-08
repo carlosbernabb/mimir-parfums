@@ -1,18 +1,7 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { Order, STATUS_LABELS } from "./orders";
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // STARTTLS — más rápido que port 465 en entornos serverless
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-  connectionTimeout: 8000,  // 8s máx para conectar
-  greetingTimeout: 8000,
-  socketTimeout: 8000,
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const ADMIN_EMAILS = [
   "carbebezu.10@gmail.com",
@@ -21,7 +10,7 @@ const ADMIN_EMAILS = [
   "anchrishess@gmail.com",
 ];
 
-const SENDER = process.env.GMAIL_USER!;
+const FROM = "MIMIR Parfums <onboarding@resend.dev>";
 const BASE_URL = process.env.NEXT_PUBLIC_URL!;
 const gold = "#C9A84C";
 const dark = "#0c0c0c";
@@ -99,6 +88,17 @@ function formatDate(iso: string): string {
   });
 }
 
+async function send(to: string | string[], subject: string, html: string, replyTo?: string) {
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    html,
+    ...(replyTo ? { replyTo } : {}),
+  });
+  if (error) throw new Error(error.message);
+}
+
 // ─── Admin email ─────────────────────────────────────────────────────────────
 
 export async function sendNewOrderToAdmin(order: Order): Promise<void> {
@@ -129,12 +129,11 @@ export async function sendNewOrderToAdmin(order: Order): Promise<void> {
     </p>
   `;
 
-  await transporter.sendMail({
-    from: `"MIMIR Parfums" <${SENDER}>`,
-    to: ADMIN_EMAILS,
-    subject: `🛒 [${order.order_id}] Nuevo pedido — $${order.total_mxn.toLocaleString("es-MX")} MXN — ${order.shipping.nombre}`,
-    html: emailWrapper(body),
-  });
+  await send(
+    ADMIN_EMAILS,
+    `🛒 [${order.order_id}] Nuevo pedido — $${order.total_mxn.toLocaleString("es-MX")} MXN — ${order.shipping.nombre}`,
+    emailWrapper(body)
+  );
 }
 
 // ─── Customer confirmation ────────────────────────────────────────────────────
@@ -174,20 +173,16 @@ export async function sendConfirmationToCustomer(order: Order): Promise<void> {
     </p>
   `;
 
-  await transporter.sendMail({
-    from: `"MIMIR Parfums" <${SENDER}>`,
-    to: order.customer_email,
-    subject: `Tu pedido ${order.order_id} está confirmado — MIMIR Parfums`,
-    html: emailWrapper(body),
-  });
+  await send(
+    order.customer_email,
+    `Tu pedido ${order.order_id} está confirmado — MIMIR Parfums`,
+    emailWrapper(body)
+  );
 }
 
 // ─── Status update to customer ────────────────────────────────────────────────
 
-export async function sendStatusUpdateToCustomer(
-  order: Order,
-  newStatus: string
-): Promise<void> {
+export async function sendStatusUpdateToCustomer(order: Order, newStatus: string): Promise<void> {
   const trackingUrl = `${BASE_URL}/rastreo?orderId=${order.order_id}`;
   const label = STATUS_LABELS[newStatus as keyof typeof STATUS_LABELS] ?? newStatus;
 
@@ -230,18 +225,16 @@ export async function sendStatusUpdateToCustomer(
     </div>
   `;
 
-  await transporter.sendMail({
-    from: `"MIMIR Parfums" <${SENDER}>`,
-    to: order.customer_email,
-    subject: `[${order.order_id}] ${label} — MIMIR Parfums`,
-    html: emailWrapper(body),
-  });
+  await send(
+    order.customer_email,
+    `[${order.order_id}] ${label} — MIMIR Parfums`,
+    emailWrapper(body)
+  );
 }
 
 // ─── Retry payment ────────────────────────────────────────────────────────────
 
 export async function sendRetryPaymentEmail(order: Order): Promise<void> {
-  const shopUrl = BASE_URL;
   const discountCode = "DANKEST";
 
   const body = `
@@ -262,32 +255,27 @@ export async function sendRetryPaymentEmail(order: Order): Promise<void> {
     </div>
 
     <div style="text-align:center;margin:28px 0 24px;">
-      <a href="${shopUrl}" style="display:inline-block;padding:13px 32px;background:${gold};color:#0c0c0c;text-decoration:none;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;font-family:'Georgia',serif;border-radius:2px;">
+      <a href="${BASE_URL}" style="display:inline-block;padding:13px 32px;background:${gold};color:#0c0c0c;text-decoration:none;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;font-family:'Georgia',serif;border-radius:2px;">
         Volver a la Tienda →
       </a>
     </div>
 
     <p style="margin:0;font-size:12px;color:rgba(245,240,232,0.3);text-align:center;line-height:1.9;font-style:italic;">
-      El código <strong style="color:rgba(245,240,232,0.5);">${discountCode}</strong> se aplica automáticamente en el carrito.<br>
+      El código <strong style="color:rgba(245,240,232,0.5);">${discountCode}</strong> se aplica en el carrito.<br>
       ¿Tienes preguntas? Responde este correo y te ayudamos.
     </p>
   `;
 
-  await transporter.sendMail({
-    from: `"MIMIR Parfums" <${SENDER}>`,
-    to: order.customer_email,
-    subject: `¡Tu fragancia te espera, ${order.shipping.nombre.split(" ")[0]}! — Código DANKEST −5%`,
-    html: emailWrapper(body),
-  });
+  await send(
+    order.customer_email,
+    `¡Tu fragancia te espera, ${order.shipping.nombre.split(" ")[0]}! — Código DANKEST −5%`,
+    emailWrapper(body)
+  );
 }
 
 // ─── Contact form ─────────────────────────────────────────────────────────────
 
-export async function sendContactToAdmin(
-  orderId: string,
-  customerEmail: string,
-  message: string
-): Promise<void> {
+export async function sendContactToAdmin(orderId: string, customerEmail: string, message: string): Promise<void> {
   const body = `
     <h2 style="margin:0 0 6px;font-size:18px;font-weight:normal;color:#f5f0e8;">Mensaje de cliente</h2>
     <p style="margin:0 0 28px;font-size:13px;color:rgba(245,240,232,0.45);font-style:italic;">Recibido desde el formulario de rastreo</p>
@@ -301,11 +289,10 @@ export async function sendContactToAdmin(
     </p>
   `;
 
-  await transporter.sendMail({
-    from: `"MIMIR Parfums" <${SENDER}>`,
-    to: ADMIN_EMAILS,
-    replyTo: customerEmail,
-    subject: `📩 Mensaje de cliente${orderId ? ` — ${orderId}` : ""} — MIMIR Parfums`,
-    html: emailWrapper(body),
-  });
+  await send(
+    ADMIN_EMAILS,
+    `📩 Mensaje de cliente${orderId ? ` — ${orderId}` : ""} — MIMIR Parfums`,
+    emailWrapper(body),
+    customerEmail
+  );
 }
