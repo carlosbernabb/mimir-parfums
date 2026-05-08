@@ -173,6 +173,19 @@ export default function ProductCard({ product, index }: ProductCardProps) {
 
           <div className="gold-line" style={{ marginBottom: 12 }} />
 
+          {product.stock !== undefined && product.stock <= 5 && (
+            <p style={{
+              margin: "0 0 10px",
+              fontSize: "0.6rem",
+              letterSpacing: "0.12em",
+              color: product.stock <= 2 ? "#e74c3c" : "#e8a020",
+              textTransform: "uppercase",
+              fontFamily: "'Cinzel', serif",
+            }}>
+              ⚠ Solo quedan {product.stock} {product.stock === 1 ? "unidad" : "unidades"}
+            </p>
+          )}
+
           <div className="flex items-center justify-between" style={{ gap: 12 }}>
             <div>
               {hasOffer && (

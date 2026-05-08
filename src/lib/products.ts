@@ -11,6 +11,7 @@ export interface Product {
   volume: string;
   image: string;
   stripePriceId?: string;
+  stock?: number;
 }
 
 export const products: Product[] = [
@@ -32,6 +33,7 @@ export const products: Product[] = [
     volume: "100ml",
     image: "/perfumes/lattafa-haya-for-women.png",
     stripePriceId: "price_XXXX",
+    stock: 3,
   },
   {
     id: "afnan-9pm-night-out",
@@ -48,6 +50,7 @@ export const products: Product[] = [
     volume: "100ml",
     image: "/perfumes/afnan-9pm-night-out.png",
     stripePriceId: "price_XXXX",
+    stock: 4,
   },
   {
     id: "lattafa-al-qiam-gold",
@@ -64,6 +67,7 @@ export const products: Product[] = [
     volume: "100ml",
     image: "/perfumes/lattafa-al-qiam-gold.png",
     stripePriceId: "price_XXXX",
+    stock: 2,
   },
   {
     id: "armaf-arabian-sky",
