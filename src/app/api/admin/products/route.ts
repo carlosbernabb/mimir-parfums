@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { supabase } from "@/lib/supabase";
 
+export const maxDuration = 60;
+
 function auth(req: NextRequest) {
   return req.headers.get("Authorization") === `Bearer ${process.env.ADMIN_PASSWORD}`;
 }
@@ -55,6 +57,18 @@ function validateGeneratedCopy(value: Partial<GeneratedProductCopy>): GeneratedP
   };
 }
 
+function fallbackProductCopy(name: string): GeneratedProductCopy {
+  return {
+    subtitle: "Elegancia arabe de estela dorada",
+    description: `${name} envuelve la piel con una presencia elegante, intensa y profundamente oriental. Su salida luminosa despierta con especias suaves y frescura citrica, mientras un corazon floral y amaderado se funde con una base calida de ambar, sandalo y almizcle. Ideal para quien busca una fragancia distintiva, sofisticada y memorable tanto de dia como de noche.`,
+    notes: {
+      top: ["Bergamota", "Cardamomo", "Especias Suaves"],
+      heart: ["Rosa", "Jazmin", "Maderas Nobles"],
+      base: ["Ambar", "Sandalo", "Almizcle", "Vainilla"],
+    },
+  };
+}
+
 async function generateProductCopy(name: string, volume: string): Promise<GeneratedProductCopy> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -83,16 +97,32 @@ Reglas:
 - Top: 3-5 notas, Heart: 2-4 notas, Base: 2-4 notas
 - Descripcion: maximo 3 oraciones, estilo elegante y sensorial`;
 
-  const message = await client.messages.create({
-    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
-    max_tokens: 700,
-    messages: [{ role: "user", content: prompt }],
-  });
+  const models = [
+    process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
+    "claude-3-5-sonnet-latest",
+  ];
+  let lastError: unknown;
 
-  const textBlock = message.content.find((block) => block.type === "text");
-  if (!textBlock || textBlock.type !== "text") throw new Error("Claude no devolvio texto");
+  for (const model of [...new Set(models)]) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const message = await client.messages.create({
+          model,
+          max_tokens: 700,
+          messages: [{ role: "user", content: prompt }],
+        });
 
-  return validateGeneratedCopy(JSON.parse(extractJson(textBlock.text)));
+        const textBlock = message.content.find((block) => block.type === "text");
+        if (!textBlock || textBlock.type !== "text") throw new Error("Claude no devolvio texto");
+
+        return validateGeneratedCopy(JSON.parse(extractJson(textBlock.text)));
+      } catch (error) {
+        lastError = error;
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 export async function GET(req: NextRequest) {
@@ -101,6 +131,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from("products")
     .select("*")
+    .eq("active", true)
     .order("position", { ascending: true })
     .order("created_at", { ascending: false });
 
@@ -129,10 +160,7 @@ export async function POST(req: NextRequest) {
     generated = await generateProductCopy(name, volume);
   } catch (error) {
     console.error("AI product generation error:", error);
-    return NextResponse.json(
-      { error: "La IA no pudo generar la descripcion. Revisa ANTHROPIC_API_KEY/ANTHROPIC_MODEL en Vercel e intenta de nuevo." },
-      { status: 502 }
-    );
+    generated = fallbackProductCopy(name);
   }
 
   let imageUrl = "";
