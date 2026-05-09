@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { Order, STATUS_LABELS } from "./orders";
 
 const ADMIN_EMAILS = [
@@ -8,7 +8,7 @@ const ADMIN_EMAILS = [
   "anchrishess@gmail.com",
 ];
 
-const FROM = "MIMIR Parfums <onboarding@resend.dev>";
+const FROM = `MIMIR Parfums <${process.env.GMAIL_USER}>`;
 const BASE_URL = process.env.NEXT_PUBLIC_URL!;
 const gold = "#C9A84C";
 const dark = "#0c0c0c";
@@ -87,15 +87,20 @@ function formatDate(iso: string): string {
 }
 
 async function send(to: string | string[], subject: string, html: string, replyTo?: string) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const { error } = await resend.emails.send({
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+  await transporter.sendMail({
     from: FROM,
-    to: Array.isArray(to) ? to : [to],
+    to: Array.isArray(to) ? to.join(", ") : to,
     subject,
     html,
     ...(replyTo ? { replyTo } : {}),
   });
-  if (error) throw new Error(error.message);
 }
 
 // ─── Admin email ─────────────────────────────────────────────────────────────
