@@ -118,7 +118,6 @@ export default function Hero() {
                 alt={hero.name}
                 style={{
                   width: 230,
-                  height: 230,
                   objectFit: "contain",
                   maxWidth: "100%",
                   height: "auto",
