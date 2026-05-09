@@ -93,7 +93,6 @@ export default function Hero() {
           </div>
 
           <div
-            className="animate-float"
             style={{
               position: "relative",
               minHeight: 270,
@@ -111,21 +110,30 @@ export default function Hero() {
                 background: "radial-gradient(circle, rgba(201,168,76,0.18), transparent 66%)",
               }}
             />
-            {hero && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={hero.image}
-                alt={hero.name}
+            {hero?.image && (
+              <div
+                key={hero.id}
+                className="animate-hero-bottle"
                 style={{
                   width: 230,
-                  objectFit: "contain",
                   maxWidth: "100%",
-                  height: "auto",
-                  filter: "drop-shadow(0 28px 34px rgba(0,0,0,0.55))",
                   position: "relative",
                   zIndex: 1,
                 }}
-              />
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={hero.image}
+                  alt={hero.name}
+                  style={{
+                    width: "100%",
+                    objectFit: "contain",
+                    height: "auto",
+                    filter: "drop-shadow(0 28px 34px rgba(0,0,0,0.55))",
+                    display: "block",
+                  }}
+                />
+              </div>
             )}
             {hero?.sale_ends && (
               <div
