@@ -3,13 +3,15 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useCart, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/cart-store";
+import { discountDisplay } from "@/lib/discounts";
 import CheckoutModal from "./CheckoutModal";
 
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, removeItem, updateQuantity, subtotal, shipping, total, count, discountApplied, discountPercent, discountAmount, applyDiscount, removeDiscount } = useCart();
+  const { items, isOpen, closeCart, removeItem, updateQuantity, subtotal, shipping, total, count, discountApplied, discountPercent, discountAmount, discount, applyDiscount, removeDiscount } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
   const [discountError, setDiscountError] = useState(false);
+  const [discountChecking, setDiscountChecking] = useState(false);
 
   if (!isOpen && !checkoutOpen) return null;
 
@@ -228,11 +230,14 @@ export default function CartDrawer() {
                       style={{ flex: 1, fontSize: "0.8rem", padding: "10px 12px", letterSpacing: "0.08em" }}
                     />
                     <button
-                      onClick={() => {
-                        const ok = applyDiscount(discountInput);
+                      onClick={async () => {
+                        setDiscountChecking(true);
+                        const ok = await applyDiscount(discountInput);
                         if (!ok) setDiscountError(true);
                         else setDiscountInput("");
+                        setDiscountChecking(false);
                       }}
+                      disabled={discountChecking}
                       style={{
                         padding: "0 14px",
                         background: "transparent",
@@ -245,13 +250,13 @@ export default function CartDrawer() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      Aplicar
+                      {discountChecking ? "..." : "Aplicar"}
                     </button>
                   </div>
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, padding: "8px 12px", background: "rgba(100,200,100,0.06)", border: "1px solid rgba(100,200,100,0.2)" }}>
                     <p style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.9)", fontFamily: "'Cinzel', serif", letterSpacing: "0.06em" }}>
-                      ✓ {discountPercent > 0 ? `Descuento ${discountPercent}% aplicado` : "Envío gratis aplicado"}
+                      Aplicado: {discountDisplay(discount)}
                     </p>
                     <button
                       onClick={removeDiscount}
@@ -317,7 +322,7 @@ export default function CartDrawer() {
                 {discountAmount() > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                     <span style={{ fontSize: "0.78rem", color: "rgba(120,220,120,0.85)", fontStyle: "italic" }}>
-                      Descuento {discountPercent}%
+                      {discountPercent > 0 ? `Descuento ${discountPercent}%` : discountDisplay(discount)}
                     </span>
                     <span style={{ fontSize: "0.78rem", color: "rgba(120,220,120,0.85)", fontFamily: "'Cinzel', serif" }}>
                       −${discountAmount().toLocaleString()} MXN

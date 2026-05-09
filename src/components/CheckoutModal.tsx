@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useCart, SHIPPING_COST, DISCOUNT_CODE, DISCOUNT_CODE_PERCENT } from "@/lib/cart-store";
+import { useCart, SHIPPING_COST } from "@/lib/cart-store";
+import { discountDisplay } from "@/lib/discounts";
 
 interface CheckoutModalProps {
   onClose: () => void;
@@ -29,7 +30,7 @@ const ESTADOS = [
 ];
 
 export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
-  const { items, subtotal, shipping: shippingCost, total, discountApplied, discountPercent, discountAmount } = useCart();
+  const { items, subtotal, shipping: shippingCost, total, discountApplied, discountPercent, discountAmount, discountCode, discount } = useCart();
   const [step, setStep] = useState<"shipping" | "payment" | "success">("shipping");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -57,11 +58,7 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
         body: JSON.stringify({
           items: items.map((i) => ({ id: i.product.id, quantity: i.quantity })),
           shipping,
-          discountCode: discountApplied
-            ? discountPercent > 0
-              ? DISCOUNT_CODE_PERCENT
-              : DISCOUNT_CODE
-            : "",
+          discountCode: discountApplied ? discountCode : "",
         }),
       });
       const data = await res.json();
@@ -224,7 +221,7 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
                 </div>
                 {discountApplied && discountAmount() > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.8)", fontStyle: "italic" }}>✓ Descuento {discountPercent}%</span>
+                    <span style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.8)", fontStyle: "italic" }}>✓ {discountPercent > 0 ? `Descuento ${discountPercent}%` : discountDisplay(discount)}</span>
                     <span style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.8)", fontFamily: "'Cinzel', serif" }}>−${discountAmount().toLocaleString()} MXN</span>
                   </div>
                 )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { STATUS_LABELS, type OrderStatus, type Order } from "@/lib/orders";
+import type { DiscountCode, DiscountType } from "@/lib/discounts";
 
 const gold = "var(--gold)";
 
@@ -35,6 +36,7 @@ interface DbProduct {
 }
 
 const emptyForm = { name: "", price: "", volume: "100ml", originalPrice: "", saleLabel: "", saleEnds: "" };
+const emptyDiscountForm = { code: "", type: "free_shipping" as DiscountType, value: "", label: "" };
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
@@ -48,7 +50,7 @@ export default function AdminPage() {
   const [emailAction, setEmailAction] = useState<string | null>(null);
 
   // Panel switcher
-  const [panel, setPanel] = useState<"orders" | "products">("orders");
+  const [panel, setPanel] = useState<"orders" | "products" | "discounts">("orders");
 
   // Per-order ship form state
   const [shipForm, setShipForm] = useState<Record<string, { carrier: string; tracking: string; url: string }>>({});
@@ -71,6 +73,10 @@ export default function AdminPage() {
   const [heroChangingProduct, setHeroChangingProduct] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState("");
+  const [discounts, setDiscounts] = useState<DiscountCode[]>([]);
+  const [discountForm, setDiscountForm] = useState(emptyDiscountForm);
+  const [discountSaving, setDiscountSaving] = useState(false);
+  const [discountError, setDiscountError] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("mimir_admin_token");
@@ -122,9 +128,67 @@ export default function AdminPage() {
     }
   }
 
-  function handlePanelSwitch(p: "orders" | "products") {
+  async function loadDiscounts(t: string) {
+    const res = await fetch("/api/admin/discounts", {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setDiscounts(data.discounts ?? []);
+    }
+  }
+
+  function handlePanelSwitch(p: "orders" | "products" | "discounts") {
     setPanel(p);
     if (p === "products" && token) loadDbProducts(token);
+    if (p === "discounts" && token) loadDiscounts(token);
+  }
+
+  async function saveDiscount(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token) return;
+    setDiscountSaving(true);
+    setDiscountError("");
+    try {
+      const res = await fetch("/api/admin/discounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          code: discountForm.code,
+          type: discountForm.type,
+          value: discountForm.type === "free_shipping" ? 0 : parseInt(discountForm.value, 10),
+          label: discountForm.label,
+          active: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setDiscountError(data.error ?? "Error guardando descuento"); return; }
+      setDiscountForm(emptyDiscountForm);
+      await loadDiscounts(token);
+    } finally {
+      setDiscountSaving(false);
+    }
+  }
+
+  async function toggleDiscount(discount: DiscountCode) {
+    if (!token) return;
+    await fetch("/api/admin/discounts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code: discount.code, active: !discount.active }),
+    });
+    await loadDiscounts(token);
+  }
+
+  async function removeDiscountCode(code: string) {
+    if (!token) return;
+    if (!confirm(`Eliminar el descuento "${code}"?`)) return;
+    await fetch("/api/admin/discounts", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code }),
+    });
+    await loadDiscounts(token);
   }
 
   function moveProduct(index: number, direction: -1 | 1) {
@@ -404,7 +468,7 @@ export default function AdminPage() {
 
         {/* Panel tabs */}
         <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
-          {(["orders", "products"] as const).map((p) => (
+          {(["orders", "products", "discounts"] as const).map((p) => (
             <button
               key={p}
               onClick={() => handlePanelSwitch(p)}
@@ -420,7 +484,7 @@ export default function AdminPage() {
                 textTransform: "uppercase",
               }}
             >
-              {p === "orders" ? "📦 Pedidos" : "🌿 Productos"}
+              {p === "orders" ? "Pedidos" : p === "products" ? "Productos" : "Descuentos"}
             </button>
           ))}
         </div>
@@ -968,6 +1032,61 @@ export default function AdminPage() {
                 </>
               );
             })()}
+          </div>
+        )}
+
+        {panel === "discounts" && (
+          <div style={{ display: "grid", gap: 18 }}>
+            <div style={{ border: "1px solid rgba(201,168,76,0.35)", background: "rgba(201,168,76,0.03)", padding: 18 }}>
+              <p className="font-display" style={{ fontSize: "0.5rem", letterSpacing: "0.22em", color: gold, textTransform: "uppercase", marginBottom: 14 }}>
+                Descuentos
+              </p>
+              <form onSubmit={saveDiscount} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1.3fr auto", gap: 10, alignItems: "end" }}>
+                <div>
+                  <label style={{ fontSize: "0.48rem", letterSpacing: "0.15em", color: "rgba(245,240,232,0.4)", fontFamily: "'Cinzel', serif", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Codigo</label>
+                  <input style={input} value={discountForm.code} onChange={(e) => setDiscountForm({ ...discountForm, code: e.target.value.toUpperCase() })} placeholder="AMIR23" required />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.48rem", letterSpacing: "0.15em", color: "rgba(245,240,232,0.4)", fontFamily: "'Cinzel', serif", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Tipo</label>
+                  <select style={input} value={discountForm.type} onChange={(e) => setDiscountForm({ ...discountForm, type: e.target.value as DiscountType })}>
+                    <option value="free_shipping" style={{ background: "#111" }}>Envio gratis</option>
+                    <option value="percent" style={{ background: "#111" }}>Porcentaje</option>
+                    <option value="fixed_amount" style={{ background: "#111" }}>Monto fijo</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.48rem", letterSpacing: "0.15em", color: "rgba(245,240,232,0.4)", fontFamily: "'Cinzel', serif", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Valor</label>
+                  <input style={input} type="number" min="0" value={discountForm.value} disabled={discountForm.type === "free_shipping"} onChange={(e) => setDiscountForm({ ...discountForm, value: e.target.value })} placeholder={discountForm.type === "percent" ? "5" : "100"} />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.48rem", letterSpacing: "0.15em", color: "rgba(245,240,232,0.4)", fontFamily: "'Cinzel', serif", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Etiqueta</label>
+                  <input style={input} value={discountForm.label} onChange={(e) => setDiscountForm({ ...discountForm, label: e.target.value })} placeholder="5% de descuento" />
+                </div>
+                <button className="btn-primary" type="submit" disabled={discountSaving} style={{ padding: "12px 18px", fontSize: "0.55rem" }}>
+                  {discountSaving ? "..." : "Guardar"}
+                </button>
+              </form>
+              {discountError && <p style={{ color: "#e74c3c", fontSize: "0.75rem", marginTop: 10, fontStyle: "italic" }}>{discountError}</p>}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {discounts.map((discount) => (
+                <div key={discount.code} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(201,168,76,0.1)", padding: "12px 16px", display: "flex", gap: 12, alignItems: "center" }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: "0.9rem", color: "#f5f0e8", margin: 0, fontFamily: "'Cinzel', serif", letterSpacing: "0.08em" }}>{discount.code}</p>
+                    <p style={{ fontSize: "0.68rem", color: "rgba(245,240,232,0.45)", margin: "4px 0 0" }}>
+                      {discount.label} - {discount.type === "free_shipping" ? "Envio gratis" : discount.type === "percent" ? `${discount.value}%` : `$${discount.value.toLocaleString()} MXN`} - {discount.active ? "Activo" : "Pausado"}
+                    </p>
+                  </div>
+                  <button onClick={() => toggleDiscount(discount)} style={{ background: discount.active ? "rgba(245,200,80,0.07)" : "rgba(100,220,100,0.08)", border: "1px solid rgba(201,168,76,0.25)", color: gold, padding: "7px 12px", cursor: "pointer", fontSize: "0.55rem", fontFamily: "'Cinzel', serif" }}>
+                    {discount.active ? "Pausar" : "Activar"}
+                  </button>
+                  <button onClick={() => removeDiscountCode(discount.code)} style={{ background: "rgba(231,76,60,0.07)", border: "1px solid rgba(231,76,60,0.25)", color: "rgba(231,76,60,0.8)", padding: "7px 12px", cursor: "pointer", fontSize: "0.55rem", fontFamily: "'Cinzel', serif" }}>
+                    Borrar
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
