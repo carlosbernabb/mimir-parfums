@@ -1,24 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { products as staticProducts, type Product } from "@/lib/products";
+import { type Product } from "@/lib/products";
 import ProductCard from "./ProductCard";
 
 export default function ProductGrid() {
-  const [allProducts, setAllProducts] = useState<Product[]>(staticProducts);
+  const [allProducts, setAllProducts] = useState<Product[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     fetch("/api/products")
       .then((r) => r.json())
       .then((data) => {
-        if (data.products?.length) setAllProducts(data.products);
+        setAllProducts(data.products ?? []);
       })
-      .catch(() => {});
+      .catch(() => {
+        setAllProducts([]);
+        setLoadError(true);
+      });
   }, []);
 
   return (
     <section id="collection" style={{ padding: "34px 0 64px" }}>
-      {/* Section header */}
       <div style={{ textAlign: "center", marginBottom: 40, padding: "0 24px" }}>
         <p
           className="font-display"
@@ -48,7 +51,6 @@ export default function ProductGrid() {
         </div>
       </div>
 
-      {/* Grid */}
       <div
         style={{
           display: "grid",
@@ -60,12 +62,23 @@ export default function ProductGrid() {
           border: "1px solid rgba(201,168,76,0.08)",
         }}
       >
-        {allProducts.map((product, i) => (
-          <ProductCard key={product.id} product={product} index={i} />
-        ))}
+        {allProducts === null
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  aspectRatio: "0.72",
+                  background: "linear-gradient(145deg, rgba(26,8,8,0.7) 0%, rgba(15,15,15,0.9) 100%)",
+                  border: "1px solid rgba(201,168,76,0.06)",
+                  opacity: 0.45,
+                }}
+              />
+            ))
+          : allProducts.map((product, i) => (
+              <ProductCard key={product.id} product={product} index={i} />
+            ))}
       </div>
 
-      {/* Bottom note */}
       <p
         style={{
           textAlign: "center",
@@ -76,7 +89,9 @@ export default function ProductGrid() {
           padding: "0 24px",
         }}
       >
-        Toca cualquier perfume para ver notas, descripción y agregarlo al carrito.
+        {loadError
+          ? "No pudimos cargar la coleccion. Recarga la pagina para intentar de nuevo."
+          : "Toca cualquier perfume para ver notas, descripcion y agregarlo al carrito."}
       </p>
     </section>
   );

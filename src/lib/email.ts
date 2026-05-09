@@ -45,7 +45,7 @@ function itemsTable(order: Order): string {
     <tr>
       <td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
         <span style="color:#f5f0e8;font-size:14px;">${item.name}</span>
-        <span style="color:rgba(245,240,232,0.4);font-size:12px;font-style:italic;"> · Eau de Parfum 30ml</span>
+        <span style="color:rgba(245,240,232,0.4);font-size:12px;font-style:italic;"> · Eau de Parfum ${item.volume ?? "100ml"}</span>
       </td>
       <td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);text-align:center;color:rgba(245,240,232,0.6);font-size:13px;">× ${item.quantity}</td>
       <td style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);text-align:right;color:#f5f0e8;font-size:14px;">$${(item.price * item.quantity).toLocaleString("es-MX")} MXN</td>

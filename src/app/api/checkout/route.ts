@@ -2,31 +2,141 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabase";
 import { generateOrderId } from "@/lib/orders";
+import {
+  DISCOUNT_CODE,
+  DISCOUNT_CODE_PERCENT,
+  DISCOUNT_PERCENT_VALUE,
+  FREE_SHIPPING_THRESHOLD,
+  SHIPPING_COST,
+} from "@/lib/pricing";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
 });
 
+type CheckoutItemInput = {
+  id: string;
+  quantity: number;
+};
+
+type ShippingInput = {
+  nombre: string;
+  email: string;
+  telefono: string;
+  calle: string;
+  numero: string;
+  colonia: string;
+  ciudad: string;
+  estado: string;
+  codigoPostal: string;
+};
+
+type DbProduct = {
+  id: string;
+  name: string;
+  price: number;
+  volume: string;
+  active: boolean;
+};
+
+function cleanText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeShipping(shipping: Partial<ShippingInput> | undefined): ShippingInput | null {
+  if (!shipping) return null;
+
+  const normalized = {
+    nombre: cleanText(shipping.nombre),
+    email: cleanText(shipping.email).toLowerCase(),
+    telefono: cleanText(shipping.telefono),
+    calle: cleanText(shipping.calle),
+    numero: cleanText(shipping.numero),
+    colonia: cleanText(shipping.colonia),
+    ciudad: cleanText(shipping.ciudad),
+    estado: cleanText(shipping.estado),
+    codigoPostal: cleanText(shipping.codigoPostal),
+  };
+
+  const required: (keyof ShippingInput)[] = [
+    "nombre",
+    "email",
+    "telefono",
+    "calle",
+    "numero",
+    "colonia",
+    "ciudad",
+    "estado",
+    "codigoPostal",
+  ];
+
+  if (required.some((field) => !normalized[field])) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized.email)) return null;
+
+  return normalized;
+}
+
+function normalizeItems(items: unknown): CheckoutItemInput[] {
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item) => ({
+      id: cleanText((item as CheckoutItemInput).id),
+      quantity: Number((item as CheckoutItemInput).quantity),
+    }))
+    .filter((item) => item.id && Number.isInteger(item.quantity) && item.quantity > 0 && item.quantity <= 10);
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { items, shipping, discountApplied, discountPercent = 0 } = await req.json();
+    const body = await req.json();
+    const requestedItems = normalizeItems(body.items);
+    const shipping = normalizeShipping(body.shipping);
+    const discountCode = cleanText(body.discountCode).toUpperCase();
 
-    if (!items?.length) {
-      return NextResponse.json({ error: "Carrito vacío" }, { status: 400 });
+    if (!requestedItems.length) {
+      return NextResponse.json({ error: "Carrito vacio" }, { status: 400 });
     }
 
-    const SHIPPING_COST = 180;
-    const FREE_SHIPPING_THRESHOLD = 1900;
+    if (!shipping) {
+      return NextResponse.json({ error: "Datos de envio incompletos" }, { status: 400 });
+    }
 
-    const subtotalMxn = items.reduce(
-      (sum: number, i: { price: number; quantity: number }) => sum + i.price * i.quantity,
-      0
-    );
-    const discountAmountMxn = discountPercent > 0 ? Math.round(subtotalMxn * discountPercent / 100) : 0;
-    const shippingMxn = (discountApplied || subtotalMxn >= FREE_SHIPPING_THRESHOLD) ? 0 : SHIPPING_COST;
+    const productIds = [...new Set(requestedItems.map((item) => item.id))];
+    const { data: dbProducts, error: productError } = await supabase
+      .from("products")
+      .select("id,name,price,volume,active")
+      .in("id", productIds)
+      .eq("active", true);
+
+    if (productError) {
+      console.error("Supabase product lookup error:", productError);
+      return NextResponse.json({ error: "Error al validar productos" }, { status: 500 });
+    }
+
+    if (!dbProducts || dbProducts.length !== productIds.length) {
+      return NextResponse.json({ error: "Uno o mas productos ya no estan disponibles" }, { status: 400 });
+    }
+
+    const productById = new Map((dbProducts as DbProduct[]).map((product) => [product.id, product]));
+    const items = requestedItems.map((item) => {
+      const product = productById.get(item.id)!;
+      return {
+        id: product.id,
+        name: product.name.trim(),
+        price: product.price,
+        volume: product.volume,
+        quantity: item.quantity,
+      };
+    });
+
+    const subtotalMxn = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const discountPercent = discountCode === DISCOUNT_CODE_PERCENT ? DISCOUNT_PERCENT_VALUE : 0;
+    const discountAmountMxn = discountPercent > 0 ? Math.round((subtotalMxn * discountPercent) / 100) : 0;
+    const freeShippingCodeApplied = discountCode === DISCOUNT_CODE;
+    const shippingMxn = freeShippingCodeApplied || subtotalMxn >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
     const totalMxn = subtotalMxn - discountAmountMxn + shippingMxn;
 
-    // Generate unique order ID (retry if collision)
     let orderId = generateOrderId();
     for (let attempt = 0; attempt < 5; attempt++) {
       const { data } = await supabase
@@ -38,7 +148,6 @@ export async function POST(req: NextRequest) {
       orderId = generateOrderId();
     }
 
-    // Save order with pending_payment status
     const { error: insertError } = await supabase.from("orders").insert({
       order_id: orderId,
       status: "pending_payment",
@@ -53,14 +162,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Error al crear el pedido" }, { status: 500 });
     }
 
-    const discountMultiplier = discountPercent > 0 ? (1 - discountPercent / 100) : 1;
-
-    const lineItems: object[] = items.map((item: { name: string; price: number; quantity: number }) => ({
+    const discountMultiplier = discountPercent > 0 ? 1 - discountPercent / 100 : 1;
+    const lineItems: object[] = items.map((item) => ({
       price_data: {
         currency: "mxn",
         product_data: {
-          name: `MIMIR Parfums — ${item.name}${discountPercent > 0 ? ` (−${discountPercent}%)` : ""}`,
-          description: "Eau de Parfum 30ml",
+          name: `MIMIR Parfums - ${item.name}${discountPercent > 0 ? ` (-${discountPercent}%)` : ""}`,
+          description: `Eau de Parfum ${item.volume}`,
           images: [`${process.env.NEXT_PUBLIC_URL}/MIMIR_LOGO.png`],
         },
         unit_amount: Math.round(item.price * discountMultiplier) * 100,
@@ -72,7 +180,7 @@ export async function POST(req: NextRequest) {
       lineItems.push({
         price_data: {
           currency: "mxn",
-          product_data: { name: "Envío a México" },
+          product_data: { name: "Envio a Mexico" },
           unit_amount: shippingMxn * 100,
         },
         quantity: 1,
@@ -90,16 +198,15 @@ export async function POST(req: NextRequest) {
       metadata: { order_id: orderId },
       custom_text: {
         submit: {
-          message: `Envío a: ${shipping.calle} ${shipping.numero}, ${shipping.colonia}, ${shipping.ciudad}, ${shipping.estado} CP ${shipping.codigoPostal}`,
+          message: `Envio a: ${shipping.calle} ${shipping.numero}, ${shipping.colonia}, ${shipping.ciudad}, ${shipping.estado} CP ${shipping.codigoPostal}`,
         },
       },
       payment_intent_data: {
-        description: `MIMIR Parfums — ${orderId} — ${shipping.nombre}`,
+        description: `MIMIR Parfums - ${orderId} - ${shipping.nombre}`,
         metadata: { order_id: orderId, nombre: shipping.nombre, telefono: shipping.telefono },
       },
     });
 
-    // Store Stripe session ID
     await supabase
       .from("orders")
       .update({ stripe_session_id: session.id })
@@ -108,6 +215,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error("Checkout error:", error);
-    return NextResponse.json({ error: "Error al crear la sesión de pago" }, { status: 500 });
+    return NextResponse.json({ error: "Error al crear la sesion de pago" }, { status: 500 });
   }
 }

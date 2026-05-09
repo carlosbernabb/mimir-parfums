@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Product } from "@/lib/products";
+import type { Product } from "@/lib/products";
 import { useCart } from "@/lib/cart-store";
 import PerfumeBottleSVG from "./PerfumeBottleSVG";
 

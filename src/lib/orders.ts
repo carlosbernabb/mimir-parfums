@@ -39,6 +39,7 @@ export interface OrderItem {
   id: string;
   name: string;
   price: number;
+  volume?: string;
   quantity: number;
 }
 

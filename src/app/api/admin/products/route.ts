@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   if (!auth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const formData = await req.formData();
-  const name = formData.get("name") as string;
+  const name = ((formData.get("name") as string) || "").trim();
   const price = parseInt(formData.get("price") as string, 10);
   const volume = (formData.get("volume") as string) || "100ml";
   const originalPrice = formData.get("originalPrice") ? parseInt(formData.get("originalPrice") as string, 10) : null;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCart, SHIPPING_COST, FREE_SHIPPING_THRESHOLD } from "@/lib/cart-store";
+import { useCart, SHIPPING_COST, DISCOUNT_CODE, DISCOUNT_CODE_PERCENT } from "@/lib/cart-store";
 
 interface CheckoutModalProps {
   onClose: () => void;
@@ -29,7 +29,7 @@ const ESTADOS = [
 ];
 
 export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
-  const { items, subtotal, shipping: shippingCost, total, clearCart, discountApplied, discountPercent, discountAmount } = useCart();
+  const { items, subtotal, shipping: shippingCost, total, discountApplied, discountPercent, discountAmount } = useCart();
   const [step, setStep] = useState<"shipping" | "payment" | "success">("shipping");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -55,10 +55,13 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map((i) => ({ id: i.product.id, name: i.product.name, price: i.product.price, quantity: i.quantity })),
+          items: items.map((i) => ({ id: i.product.id, quantity: i.quantity })),
           shipping,
-          discountApplied,
-          discountPercent,
+          discountCode: discountApplied
+            ? discountPercent > 0
+              ? DISCOUNT_CODE_PERCENT
+              : DISCOUNT_CODE
+            : "",
         }),
       });
       const data = await res.json();

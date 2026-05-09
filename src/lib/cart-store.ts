@@ -1,11 +1,19 @@
 import { create } from "zustand";
-import { Product } from "./products";
-
-export const SHIPPING_COST = 180;
-export const FREE_SHIPPING_THRESHOLD = 1900;
-export const DISCOUNT_CODE = "AMIR23";
-export const DISCOUNT_CODE_PERCENT = "DANKEST";
-export const DISCOUNT_PERCENT_VALUE = 5;
+import type { Product } from "./products";
+export {
+  DISCOUNT_CODE,
+  DISCOUNT_CODE_PERCENT,
+  DISCOUNT_PERCENT_VALUE,
+  FREE_SHIPPING_THRESHOLD,
+  SHIPPING_COST,
+} from "./pricing";
+import {
+  DISCOUNT_CODE,
+  DISCOUNT_CODE_PERCENT,
+  DISCOUNT_PERCENT_VALUE,
+  FREE_SHIPPING_THRESHOLD,
+  SHIPPING_COST,
+} from "./pricing";
 
 export interface CartItem {
   product: Product;
