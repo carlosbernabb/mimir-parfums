@@ -22,15 +22,20 @@ export async function POST(req: NextRequest) {
   const results: { orderId: string; email: string; success: boolean; error?: string }[] = [];
 
   for (const order of orders as Order[]) {
+    const email = order.customer_email?.trim();
+    if (!email || !email.includes("@")) {
+      results.push({ orderId: order.order_id, email: email ?? "(sin email)", success: false, error: "Email inválido o vacío" });
+      continue;
+    }
     try {
       await sendRetryPaymentEmail(order);
-      results.push({ orderId: order.order_id, email: order.customer_email, success: true });
+      results.push({ orderId: order.order_id, email, success: true });
     } catch (err) {
       results.push({
         orderId: order.order_id,
-        email: order.customer_email,
+        email,
         success: false,
-        error: String(err),
+        error: err instanceof Error ? err.message : String(err),
       });
     }
   }

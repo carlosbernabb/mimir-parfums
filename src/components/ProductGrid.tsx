@@ -1,9 +1,21 @@
 "use client";
 
-import { products } from "@/lib/products";
+import { useState, useEffect } from "react";
+import { products as staticProducts, type Product } from "@/lib/products";
 import ProductCard from "./ProductCard";
 
 export default function ProductGrid() {
+  const [allProducts, setAllProducts] = useState<Product[]>(staticProducts);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.products?.length) setAllProducts(data.products);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section id="collection" style={{ padding: "34px 0 64px" }}>
       {/* Section header */}
@@ -48,7 +60,7 @@ export default function ProductGrid() {
           border: "1px solid rgba(201,168,76,0.08)",
         }}
       >
-        {products.map((product, i) => (
+        {allProducts.map((product, i) => (
           <ProductCard key={product.id} product={product} index={i} />
         ))}
       </div>
