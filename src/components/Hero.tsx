@@ -1,10 +1,25 @@
 "use client";
 
-import Image from "next/image";
+import { useState, useEffect } from "react";
+
+interface HeroProduct {
+  id: string;
+  name: string;
+  image: string;
+  price: number;
+  sale_label: string | null;
+  sale_ends: string | null;
+}
 
 const trustBadges = ["Originales", "Envíos a México", "Pago seguro", "Fragancias virales"];
 
 export default function Hero() {
+  const [hero, setHero] = useState<HeroProduct | null>(null);
+
+  useEffect(() => {
+    fetch("/api/hero").then((r) => r.json()).then((d) => setHero(d.hero));
+  }, []);
+
   return (
     <section
       className="relative arabic-pattern-bg overflow-hidden"
@@ -61,18 +76,20 @@ export default function Hero() {
             >
               Lujo que se nota antes de hablar
             </h1>
-            <p
-              style={{
-                fontSize: "1rem",
-                color: "rgba(245,240,232,0.72)",
-                lineHeight: 1.55,
-                maxWidth: 320,
-                marginBottom: 14,
-              }}
-            >
-              Fragancias intensas, elegantes y de larga duración. Desde{" "}
-              <span style={{ color: "var(--gold-light)", fontWeight: 700 }}>$650 MXN</span>.
-            </p>
+            {hero && (
+              <p
+                style={{
+                  fontSize: "1rem",
+                  color: "rgba(245,240,232,0.72)",
+                  lineHeight: 1.55,
+                  maxWidth: 320,
+                  marginBottom: 14,
+                }}
+              >
+                Fragancias intensas, elegantes y de larga duración. Desde{" "}
+                <span style={{ color: "var(--gold-light)", fontWeight: 700 }}>${hero.price.toLocaleString("es-MX")} MXN</span>.
+              </p>
+            )}
           </div>
 
           <div
@@ -94,39 +111,46 @@ export default function Hero() {
                 background: "radial-gradient(circle, rgba(201,168,76,0.18), transparent 66%)",
               }}
             />
-            <Image
-              src="/perfumes/lattafa-haya-for-women.png"
-              alt="Lattafa Haya for Women"
-              width={230}
-              height={230}
-              priority
-              style={{
-                objectFit: "contain",
-                maxWidth: "100%",
-                height: "auto",
-                filter: "drop-shadow(0 28px 34px rgba(0,0,0,0.55))",
-              }}
-            />
-            <div
-              className="font-display"
-              style={{
-                position: "absolute",
-                bottom: 20,
-                left: "50%",
-                transform: "translateX(-50%)",
-                whiteSpace: "nowrap",
-                background: "rgba(8,8,8,0.72)",
-                border: "1px solid rgba(201,168,76,0.28)",
-                color: "var(--gold)",
-                padding: "7px 10px",
-                fontSize: "0.54rem",
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              Oferta hasta 10 mayo
-            </div>
+            {hero && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={hero.image}
+                alt={hero.name}
+                style={{
+                  width: 230,
+                  height: 230,
+                  objectFit: "contain",
+                  maxWidth: "100%",
+                  height: "auto",
+                  filter: "drop-shadow(0 28px 34px rgba(0,0,0,0.55))",
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              />
+            )}
+            {hero?.sale_ends && (
+              <div
+                className="font-display"
+                style={{
+                  position: "absolute",
+                  bottom: 20,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  whiteSpace: "nowrap",
+                  background: "rgba(8,8,8,0.72)",
+                  border: "1px solid rgba(201,168,76,0.28)",
+                  color: "var(--gold)",
+                  padding: "7px 10px",
+                  fontSize: "0.54rem",
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  backdropFilter: "blur(10px)",
+                  zIndex: 2,
+                }}
+              >
+                {hero.sale_ends}
+              </div>
+            )}
           </div>
         </div>
 
@@ -144,13 +168,7 @@ export default function Hero() {
             </a>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: 8,
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
             {trustBadges.map((badge) => (
               <div
                 key={badge}

@@ -31,6 +31,7 @@ interface DbProduct {
   active: boolean;
   created_at: string;
   position: number;
+  is_hero: boolean;
 }
 
 const emptyForm = { name: "", price: "", volume: "100ml", originalPrice: "", saleLabel: "", saleEnds: "" };
@@ -65,6 +66,11 @@ export default function AdminPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [reordering, setReordering] = useState(false);
   const [orderDirty, setOrderDirty] = useState(false);
+  const [heroForm, setHeroForm] = useState({ price: "", sale_ends: "" });
+  const [heroSaving, setHeroSaving] = useState(false);
+  const [heroChangingProduct, setHeroChangingProduct] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [editPrice, setEditPrice] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("mimir_admin_token");
@@ -109,7 +115,10 @@ export default function AdminPage() {
     });
     if (res.ok) {
       const data = await res.json();
-      setDbProducts(data.products ?? []);
+      const prods: DbProduct[] = data.products ?? [];
+      setDbProducts(prods);
+      const hero = prods.find((p) => p.is_hero);
+      if (hero) setHeroForm({ price: String(hero.price), sale_ends: hero.sale_ends ?? "" });
     }
   }
 
@@ -131,15 +140,47 @@ export default function AdminPage() {
     if (!token) return;
     setReordering(true);
     try {
+      const catalogIds = dbProducts.filter((p) => !p.is_hero).map((p) => p.id);
       await fetch("/api/admin/products", {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ order: dbProducts.map((p) => p.id) }),
+        body: JSON.stringify({ order: catalogIds }),
       });
       setOrderDirty(false);
     } finally {
       setReordering(false);
     }
+  }
+
+  async function saveHeroChanges(newHeroId?: string) {
+    if (!token) return;
+    setHeroSaving(true);
+    try {
+      await fetch("/api/admin/hero", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          ...(newHeroId ? { heroProductId: newHeroId } : {}),
+          price: parseInt(heroForm.price) || undefined,
+          sale_ends: heroForm.sale_ends,
+        }),
+      });
+      await loadDbProducts(token);
+      setHeroChangingProduct(false);
+    } finally {
+      setHeroSaving(false);
+    }
+  }
+
+  async function saveProductPrice(id: string) {
+    if (!token) return;
+    await fetch(`/api/admin/products/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ price: parseInt(editPrice) }),
+    });
+    await loadDbProducts(token);
+    setEditingProductId(null);
   }
 
   async function handleShip(orderId: string) {
@@ -756,64 +797,177 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* Existing DB products */}
-            <div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                <p className="font-display" style={{ fontSize: "0.5rem", letterSpacing: "0.2em", color: "rgba(245,240,232,0.3)", textTransform: "uppercase", margin: 0 }}>
-                  Productos ({dbProducts.length}) — arrastra con las flechas para cambiar orden
-                </p>
-                {orderDirty && (
-                  <button
-                    onClick={saveProductOrder}
-                    disabled={reordering}
-                    style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.5)", color: gold, padding: "6px 16px", cursor: "pointer", fontSize: "0.55rem", fontFamily: "'Cinzel', serif", letterSpacing: "0.1em" }}
-                  >
-                    {reordering ? "Guardando..." : "💾 Guardar orden"}
-                  </button>
-                )}
-              </div>
-              {dbProducts.length === 0 && (
-                <p style={{ color: "rgba(245,240,232,0.2)", fontStyle: "italic", fontSize: "0.8rem" }}>Aún no has agregado productos desde aquí.</p>
-              )}
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {dbProducts.map((p, i) => (
-                  <div key={p.id} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${i === 0 ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, padding: "12px 16px", display: "flex", gap: 14, alignItems: "center" }}>
-                    {/* Position indicator + arrows */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, flexShrink: 0 }}>
-                      <span style={{ fontSize: "0.5rem", color: i === 0 ? gold : "rgba(245,240,232,0.2)", fontFamily: "'Cinzel', serif", letterSpacing: "0.05em" }}>
-                        {i === 0 ? "★" : `#${i + 1}`}
-                      </span>
-                      <button
-                        onClick={() => moveProduct(i, -1)}
-                        disabled={i === 0}
-                        style={{ background: "none", border: "1px solid rgba(255,255,255,0.08)", color: i === 0 ? "rgba(255,255,255,0.1)" : "rgba(245,240,232,0.5)", width: 24, height: 20, cursor: i === 0 ? "default" : "pointer", fontSize: "0.6rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
-                      >▲</button>
-                      <button
-                        onClick={() => moveProduct(i, 1)}
-                        disabled={i === dbProducts.length - 1}
-                        style={{ background: "none", border: "1px solid rgba(255,255,255,0.08)", color: i === dbProducts.length - 1 ? "rgba(255,255,255,0.1)" : "rgba(245,240,232,0.5)", width: 24, height: 20, cursor: i === dbProducts.length - 1 ? "default" : "pointer", fontSize: "0.6rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
-                      >▼</button>
-                    </div>
-                    {p.image && (
-                      <img src={p.image} alt={p.name} style={{ width: 52, height: 52, objectFit: "cover", flexShrink: 0, border: "1px solid rgba(201,168,76,0.15)" }} />
+            {/* ═══ PERFUME DE PORTADA ═══ */}
+            {(() => {
+              const hero = dbProducts.find((p) => p.is_hero);
+              const catalog = dbProducts.filter((p) => !p.is_hero);
+
+              return (
+                <>
+                  <div style={{ border: "1px solid rgba(201,168,76,0.35)", background: "rgba(201,168,76,0.03)", padding: 18 }}>
+                    <p className="font-display" style={{ fontSize: "0.5rem", letterSpacing: "0.22em", color: gold, textTransform: "uppercase", marginBottom: 14 }}>
+                      ⭐ Perfume de Portada
+                    </p>
+
+                    {hero && (
+                      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                        {hero.image && (
+                          <img src={hero.image} alt={hero.name} style={{ width: 70, height: 70, objectFit: "contain", flexShrink: 0, border: "1px solid rgba(201,168,76,0.2)", background: "rgba(0,0,0,0.3)" }} />
+                        )}
+                        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <p style={{ fontSize: "0.9rem", color: "#f5f0e8", margin: 0, fontStyle: "italic" }}>{hero.name}</p>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                            <div>
+                              <label style={{ fontSize: "0.45rem", letterSpacing: "0.15em", color: "rgba(245,240,232,0.35)", fontFamily: "'Cinzel', serif", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                                Precio MXN
+                              </label>
+                              <input
+                                type="number"
+                                style={{ ...input, padding: "7px 10px", fontSize: "0.8rem" }}
+                                value={heroForm.price}
+                                onChange={(e) => setHeroForm({ ...heroForm, price: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: "0.45rem", letterSpacing: "0.15em", color: "rgba(245,240,232,0.35)", fontFamily: "'Cinzel', serif", textTransform: "uppercase", display: "block", marginBottom: 4 }}>
+                                Texto de oferta (vacío = sin badge)
+                              </label>
+                              <input
+                                style={{ ...input, padding: "7px 10px", fontSize: "0.75rem" }}
+                                value={heroForm.sale_ends}
+                                onChange={(e) => setHeroForm({ ...heroForm, sale_ends: e.target.value })}
+                                placeholder="Ej. OFERTA HASTA 20 MAYO"
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                            <button
+                              onClick={() => saveHeroChanges()}
+                              disabled={heroSaving}
+                              style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.5)", color: gold, padding: "7px 16px", cursor: "pointer", fontSize: "0.55rem", fontFamily: "'Cinzel', serif", letterSpacing: "0.1em" }}
+                            >
+                              {heroSaving ? "Guardando..." : "💾 Guardar cambios"}
+                            </button>
+                            <button
+                              onClick={() => setHeroChangingProduct(!heroChangingProduct)}
+                              style={{ background: "none", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(245,240,232,0.5)", padding: "7px 14px", cursor: "pointer", fontSize: "0.55rem", fontFamily: "'Cinzel', serif" }}
+                            >
+                              {heroChangingProduct ? "Cancelar" : "Cambiar perfume →"}
+                            </button>
+                          </div>
+
+                          {heroChangingProduct && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                              <p style={{ fontSize: "0.65rem", color: "rgba(245,240,232,0.4)", fontStyle: "italic", margin: 0 }}>
+                                Elige cuál perfume aparece en la portada:
+                              </p>
+                              {catalog.map((p) => (
+                                <button
+                                  key={p.id}
+                                  onClick={() => {
+                                    setHeroForm({ price: String(p.price), sale_ends: p.sale_ends ?? "" });
+                                    saveHeroChanges(p.id);
+                                  }}
+                                  style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(201,168,76,0.15)", padding: "8px 12px", cursor: "pointer", display: "flex", gap: 10, alignItems: "center", textAlign: "left" }}
+                                >
+                                  {p.image && <img src={p.image} alt={p.name} style={{ width: 36, height: 36, objectFit: "contain", flexShrink: 0 }} />}
+                                  <span style={{ fontSize: "0.75rem", color: "#f5f0e8" }}>{p.name}</span>
+                                  <span style={{ fontSize: "0.65rem", color: gold, marginLeft: "auto" }}>${p.price.toLocaleString()} MXN</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: "0.85rem", color: "#f5f0e8", margin: "0 0 2px" }}>{p.name}</p>
-                      <p style={{ fontSize: "0.7rem", color: gold, fontStyle: "italic", margin: "0 0 2px" }}>{p.subtitle}</p>
-                      <p style={{ fontSize: "0.65rem", color: "rgba(245,240,232,0.3)", margin: 0 }}>
-                        ${p.price.toLocaleString()} MXN · {p.volume}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteProduct(p.id, p.name)}
-                      style={{ background: "rgba(231,76,60,0.07)", border: "1px solid rgba(231,76,60,0.25)", color: "rgba(231,76,60,0.7)", padding: "6px 12px", cursor: "pointer", fontSize: "0.55rem", fontFamily: "'Cinzel', serif", flexShrink: 0 }}
-                    >
-                      Desactivar
-                    </button>
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  {/* ═══ CATÁLOGO ═══ */}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <p className="font-display" style={{ fontSize: "0.5rem", letterSpacing: "0.2em", color: "rgba(245,240,232,0.3)", textTransform: "uppercase", margin: 0 }}>
+                        📦 Catálogo ({catalog.length}) — usa las flechas para cambiar el orden
+                      </p>
+                      {orderDirty && (
+                        <button
+                          onClick={saveProductOrder}
+                          disabled={reordering}
+                          style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.5)", color: gold, padding: "6px 16px", cursor: "pointer", fontSize: "0.55rem", fontFamily: "'Cinzel', serif", letterSpacing: "0.1em" }}
+                        >
+                          {reordering ? "Guardando..." : "💾 Guardar orden"}
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {catalog.map((p, i) => (
+                        <div key={p.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(201,168,76,0.1)", padding: "12px 16px", display: "flex", gap: 12, alignItems: "center" }}>
+                          {/* Position + arrows */}
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                            <span style={{ fontSize: "0.45rem", color: "rgba(245,240,232,0.2)", fontFamily: "'Cinzel', serif" }}>#{i + 1}</span>
+                            <button
+                              onClick={() => moveProduct(dbProducts.indexOf(p), -1)}
+                              disabled={i === 0}
+                              style={{ background: "none", border: "1px solid rgba(255,255,255,0.08)", color: i === 0 ? "rgba(255,255,255,0.1)" : "rgba(245,240,232,0.5)", width: 24, height: 20, cursor: i === 0 ? "default" : "pointer", fontSize: "0.6rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                            >▲</button>
+                            <button
+                              onClick={() => moveProduct(dbProducts.indexOf(p), 1)}
+                              disabled={i === catalog.length - 1}
+                              style={{ background: "none", border: "1px solid rgba(255,255,255,0.08)", color: i === catalog.length - 1 ? "rgba(255,255,255,0.1)" : "rgba(245,240,232,0.5)", width: 24, height: 20, cursor: i === catalog.length - 1 ? "default" : "pointer", fontSize: "0.6rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                            >▼</button>
+                          </div>
+
+                          {p.image && (
+                            <img src={p.image} alt={p.name} style={{ width: 48, height: 48, objectFit: "contain", flexShrink: 0, border: "1px solid rgba(201,168,76,0.12)", background: "rgba(0,0,0,0.2)" }} />
+                          )}
+
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: "0.82rem", color: "#f5f0e8", margin: "0 0 2px" }}>{p.name}</p>
+                            {editingProductId === p.id ? (
+                              <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4 }}>
+                                <input
+                                  type="number"
+                                  value={editPrice}
+                                  onChange={(e) => setEditPrice(e.target.value)}
+                                  style={{ ...input, padding: "4px 8px", width: 90, fontSize: "0.8rem" }}
+                                  autoFocus
+                                />
+                                <span style={{ fontSize: "0.65rem", color: "rgba(245,240,232,0.4)" }}>MXN</span>
+                                <button onClick={() => saveProductPrice(p.id)} style={{ background: "rgba(100,220,100,0.1)", border: "1px solid rgba(100,220,100,0.3)", color: "rgba(100,220,120,0.9)", padding: "4px 10px", cursor: "pointer", fontSize: "0.55rem", fontFamily: "'Cinzel', serif" }}>✓</button>
+                                <button onClick={() => setEditingProductId(null)} style={{ background: "none", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(245,240,232,0.4)", padding: "4px 8px", cursor: "pointer", fontSize: "0.55rem" }}>✕</button>
+                              </div>
+                            ) : (
+                              <p style={{ fontSize: "0.65rem", color: "rgba(245,240,232,0.3)", margin: 0 }}>
+                                ${p.price.toLocaleString()} MXN · {p.volume}
+                              </p>
+                            )}
+                          </div>
+
+                          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                            {editingProductId !== p.id && (
+                              <button
+                                onClick={() => { setEditingProductId(p.id); setEditPrice(String(p.price)); }}
+                                style={{ background: "rgba(100,160,255,0.07)", border: "1px solid rgba(100,160,255,0.2)", color: "rgba(100,180,255,0.7)", padding: "6px 10px", cursor: "pointer", fontSize: "0.5rem", fontFamily: "'Cinzel', serif" }}
+                              >
+                                Editar precio
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteProduct(p.id, p.name)}
+                              style={{ background: "rgba(231,76,60,0.07)", border: "1px solid rgba(231,76,60,0.25)", color: "rgba(231,76,60,0.7)", padding: "6px 10px", cursor: "pointer", fontSize: "0.5rem", fontFamily: "'Cinzel', serif" }}
+                            >
+                              Desactivar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 
