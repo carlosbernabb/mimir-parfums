@@ -30,6 +30,7 @@ interface DbProduct {
   image: string;
   active: boolean;
   created_at: string;
+  position: number;
 }
 
 const emptyForm = { name: "", price: "", volume: "100ml", originalPrice: "", saleLabel: "", saleEnds: "" };
@@ -62,6 +63,8 @@ export default function AdminPage() {
   const [productError, setProductError] = useState("");
   const [productSuccess, setProductSuccess] = useState<DbProduct | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [reordering, setReordering] = useState(false);
+  const [orderDirty, setOrderDirty] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("mimir_admin_token");
@@ -113,6 +116,30 @@ export default function AdminPage() {
   function handlePanelSwitch(p: "orders" | "products") {
     setPanel(p);
     if (p === "products" && token) loadDbProducts(token);
+  }
+
+  function moveProduct(index: number, direction: -1 | 1) {
+    const newList = [...dbProducts];
+    const target = index + direction;
+    if (target < 0 || target >= newList.length) return;
+    [newList[index], newList[target]] = [newList[target], newList[index]];
+    setDbProducts(newList);
+    setOrderDirty(true);
+  }
+
+  async function saveProductOrder() {
+    if (!token) return;
+    setReordering(true);
+    try {
+      await fetch("/api/admin/products", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ order: dbProducts.map((p) => p.id) }),
+      });
+      setOrderDirty(false);
+    } finally {
+      setReordering(false);
+    }
   }
 
   async function handleShip(orderId: string) {
@@ -731,15 +758,42 @@ export default function AdminPage() {
 
             {/* Existing DB products */}
             <div>
-              <p className="font-display" style={{ fontSize: "0.5rem", letterSpacing: "0.2em", color: "rgba(245,240,232,0.3)", textTransform: "uppercase", marginBottom: 12 }}>
-                Productos agregados ({dbProducts.length})
-              </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <p className="font-display" style={{ fontSize: "0.5rem", letterSpacing: "0.2em", color: "rgba(245,240,232,0.3)", textTransform: "uppercase", margin: 0 }}>
+                  Productos ({dbProducts.length}) — arrastra con las flechas para cambiar orden
+                </p>
+                {orderDirty && (
+                  <button
+                    onClick={saveProductOrder}
+                    disabled={reordering}
+                    style={{ background: "rgba(201,168,76,0.15)", border: "1px solid rgba(201,168,76,0.5)", color: gold, padding: "6px 16px", cursor: "pointer", fontSize: "0.55rem", fontFamily: "'Cinzel', serif", letterSpacing: "0.1em" }}
+                  >
+                    {reordering ? "Guardando..." : "💾 Guardar orden"}
+                  </button>
+                )}
+              </div>
               {dbProducts.length === 0 && (
                 <p style={{ color: "rgba(245,240,232,0.2)", fontStyle: "italic", fontSize: "0.8rem" }}>Aún no has agregado productos desde aquí.</p>
               )}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {dbProducts.map((p) => (
-                  <div key={p.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(201,168,76,0.1)", padding: "12px 16px", display: "flex", gap: 14, alignItems: "center" }}>
+                {dbProducts.map((p, i) => (
+                  <div key={p.id} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${i === 0 ? "rgba(201,168,76,0.4)" : "rgba(201,168,76,0.1)"}`, padding: "12px 16px", display: "flex", gap: 14, alignItems: "center" }}>
+                    {/* Position indicator + arrows */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                      <span style={{ fontSize: "0.5rem", color: i === 0 ? gold : "rgba(245,240,232,0.2)", fontFamily: "'Cinzel', serif", letterSpacing: "0.05em" }}>
+                        {i === 0 ? "★" : `#${i + 1}`}
+                      </span>
+                      <button
+                        onClick={() => moveProduct(i, -1)}
+                        disabled={i === 0}
+                        style={{ background: "none", border: "1px solid rgba(255,255,255,0.08)", color: i === 0 ? "rgba(255,255,255,0.1)" : "rgba(245,240,232,0.5)", width: 24, height: 20, cursor: i === 0 ? "default" : "pointer", fontSize: "0.6rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                      >▲</button>
+                      <button
+                        onClick={() => moveProduct(i, 1)}
+                        disabled={i === dbProducts.length - 1}
+                        style={{ background: "none", border: "1px solid rgba(255,255,255,0.08)", color: i === dbProducts.length - 1 ? "rgba(255,255,255,0.1)" : "rgba(245,240,232,0.5)", width: 24, height: 20, cursor: i === dbProducts.length - 1 ? "default" : "pointer", fontSize: "0.6rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                      >▼</button>
+                    </div>
                     {p.image && (
                       <img src={p.image} alt={p.name} style={{ width: 52, height: 52, objectFit: "cover", flexShrink: 0, border: "1px solid rgba(201,168,76,0.15)" }} />
                     )}
@@ -747,7 +801,7 @@ export default function AdminPage() {
                       <p style={{ fontSize: "0.85rem", color: "#f5f0e8", margin: "0 0 2px" }}>{p.name}</p>
                       <p style={{ fontSize: "0.7rem", color: gold, fontStyle: "italic", margin: "0 0 2px" }}>{p.subtitle}</p>
                       <p style={{ fontSize: "0.65rem", color: "rgba(245,240,232,0.3)", margin: 0 }}>
-                        ${p.price.toLocaleString()} MXN · {p.volume} · {formatDate(p.created_at)}
+                        ${p.price.toLocaleString()} MXN · {p.volume}
                       </p>
                     </div>
                     <button

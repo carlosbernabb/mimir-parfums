@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from("products")
     .select("*")
+    .order("position", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: "DB error" }, { status: 500 });
@@ -113,8 +114,12 @@ Reglas:
     subtitle = name;
   }
 
-  // 3. Save to DB
+  // 3. Save to DB — assign position 0 so it appears at top, then shift others down
   const id = `${slugify(name)}-${Date.now()}`;
+
+  // Shift all existing products down by 1
+  await supabase.rpc("increment_product_positions");
+
   const { data, error } = await supabase.from("products").insert({
     id,
     name,
@@ -128,10 +133,26 @@ Reglas:
     volume,
     image: imageUrl,
     active: true,
+    position: 1,
   }).select().single();
 
   if (error) return NextResponse.json({ error: `Error guardando: ${error.message}` }, { status: 500 });
   return NextResponse.json({ product: data }, { status: 201 });
+}
+
+// PATCH — reorder products
+export async function PATCH(req: NextRequest) {
+  if (!auth(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { order } = await req.json() as { order: string[] };
+  if (!Array.isArray(order)) return NextResponse.json({ error: "order array required" }, { status: 400 });
+
+  const updates = order.map((id, index) =>
+    supabase.from("products").update({ position: index + 1 }).eq("id", id)
+  );
+
+  await Promise.all(updates);
+  return NextResponse.json({ ok: true });
 }
 
 // DELETE — deactivate product

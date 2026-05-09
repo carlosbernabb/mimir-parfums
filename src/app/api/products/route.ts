@@ -7,6 +7,7 @@ export async function GET() {
     .from("products")
     .select("*")
     .eq("active", true)
+    .order("position", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 
   const dbProducts = (data || []).map((p) => ({
