@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { products as staticProducts } from "@/lib/products";
 
 export async function GET() {
   const { data } = await supabase
     .from("products")
     .select("*")
     .eq("active", true)
-    .order("position", { ascending: true, nullsFirst: false })
+    .order("position", { ascending: true })
     .order("created_at", { ascending: false });
 
-  const dbProducts = (data || []).map((p) => ({
+  const products = (data || []).map((p) => ({
     id: p.id,
     name: p.name,
     subtitle: p.subtitle,
@@ -26,5 +25,5 @@ export async function GET() {
     ...(p.stock !== null ? { stock: p.stock } : {}),
   }));
 
-  return NextResponse.json({ products: [...dbProducts, ...staticProducts] });
+  return NextResponse.json({ products });
 }

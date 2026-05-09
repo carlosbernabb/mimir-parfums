@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from("products")
     .select("*")
-    .order("position", { ascending: true, nullsFirst: false })
+    .order("position", { ascending: true })
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: "DB error" }, { status: 500 });
