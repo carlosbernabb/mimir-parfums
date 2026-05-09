@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { orderIds } = body as { orderIds?: string[] };
 
-  let query = supabase.from("orders").select("*").in("status", ["paid", "processing", "shipped", "delivered"]);
+  let query = supabase.from("orders").select("*").in("status", ["paid"]);
   if (orderIds?.length) {
     query = supabase.from("orders").select("*").in("order_id", orderIds);
   }
