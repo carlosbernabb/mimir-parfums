@@ -58,8 +58,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const quote = await quoteCheapestEstafeta(shipping, items);
-    return NextResponse.json({ quote: { ...quote, source: "skydropx" } });
+    try {
+      const quote = await quoteCheapestEstafeta(shipping, items);
+      return NextResponse.json({ quote: { ...quote, source: "skydropx" } });
+    } catch {
+      const pricing = await getShippingSettings();
+      return NextResponse.json({
+        quote: {
+          amount: pricing.shippingCost,
+          carrier: "Envio nacional",
+          service: "Tarifa fija",
+          days: null,
+          source: "manual",
+        },
+      });
+    }
   } catch (error) {
     console.error("Shipping quote error:", error);
     return NextResponse.json(
