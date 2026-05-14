@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useCart, SHIPPING_COST } from "@/lib/cart-store";
+import { useEffect, useState } from "react";
+import { useCart } from "@/lib/cart-store";
 import { discountDisplay } from "@/lib/discounts";
 
 interface CheckoutModalProps {
@@ -30,7 +30,7 @@ const ESTADOS = [
 ];
 
 export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
-  const { items, subtotal, shipping: shippingCost, total, discountApplied, discountPercent, discountAmount, discountCode, discount } = useCart();
+  const { items, subtotal, shipping: shippingTotal, total, discountApplied, discountPercent, discountAmount, discountCode, discount, pricingSettings, loadPricingSettings } = useCart();
   const [step, setStep] = useState<"shipping" | "payment" | "success">("shipping");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +38,11 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
     nombre: "", email: "", telefono: "", calle: "", numero: "", colonia: "",
     ciudad: "", estado: "", codigoPostal: "",
   });
+  const shippingCost = pricingSettings.shippingCost;
+
+  useEffect(() => {
+    loadPricingSettings();
+  }, [loadPricingSettings]);
 
   const updateField = (field: keyof ShippingData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -213,10 +218,10 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: discountApplied ? 6 : 12 }}>
                   <span style={{ fontStyle: "italic", color: "rgba(245,240,232,0.45)", fontSize: "0.78rem" }}>Envío a México</span>
-                  {shippingCost() === 0 ? (
+                  {shippingTotal() === 0 ? (
                     <span style={{ fontSize: "0.78rem", color: "rgba(120,220,120,0.85)", fontFamily: "'Cinzel', serif" }}>GRATIS</span>
                   ) : (
-                    <span style={{ fontSize: "0.78rem", color: "var(--cream-dim)", fontFamily: "'Cinzel', serif" }}>${SHIPPING_COST.toLocaleString()} MXN</span>
+                    <span style={{ fontSize: "0.78rem", color: "var(--cream-dim)", fontFamily: "'Cinzel', serif" }}>${shippingCost.toLocaleString()} MXN</span>
                   )}
                 </div>
                 {discountApplied && discountAmount() > 0 && (

@@ -4,10 +4,12 @@ import { discountAmountForSubtotal, type DiscountCode } from "./discounts";
 export {
   FREE_SHIPPING_THRESHOLD,
   SHIPPING_COST,
+  type PricingSettings,
 } from "./pricing";
 import {
   FREE_SHIPPING_THRESHOLD,
   SHIPPING_COST,
+  type PricingSettings,
 } from "./pricing";
 
 export interface CartItem {
@@ -22,6 +24,7 @@ interface CartStore {
   discountApplied: boolean;
   discountPercent: number;
   discountCode: string;
+  pricingSettings: PricingSettings;
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -30,6 +33,7 @@ interface CartStore {
   closeCart: () => void;
   applyDiscount: (code: string) => Promise<boolean>;
   removeDiscount: () => void;
+  loadPricingSettings: () => Promise<void>;
   subtotal: () => number;
   discountAmount: () => number;
   shipping: () => number;
@@ -44,6 +48,10 @@ export const useCart = create<CartStore>((set, get) => ({
   discountApplied: false,
   discountPercent: 0,
   discountCode: "",
+  pricingSettings: {
+    shippingCost: SHIPPING_COST,
+    freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
+  },
   addItem: (product) => {
     set((state) => {
       const existing = state.items.find((i) => i.product.id === product.id);
@@ -91,14 +99,34 @@ export const useCart = create<CartStore>((set, get) => ({
     return true;
   },
   removeDiscount: () => set({ discount: null, discountApplied: false, discountPercent: 0, discountCode: "" }),
+  loadPricingSettings: async () => {
+    const res = await fetch("/api/settings", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const pricing = data.pricing as Partial<PricingSettings> | undefined;
+    if (
+      pricing &&
+      Number.isFinite(pricing.shippingCost) &&
+      Number.isFinite(pricing.freeShippingThreshold)
+    ) {
+      set({
+        pricingSettings: {
+          shippingCost: Math.max(0, Math.round(Number(pricing.shippingCost))),
+          freeShippingThreshold: Math.max(0, Math.round(Number(pricing.freeShippingThreshold))),
+          updatedAt: pricing.updatedAt,
+        },
+      });
+    }
+  },
   subtotal: () => get().items.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
   discountAmount: () => discountAmountForSubtotal(get().discount, get().subtotal()),
   shipping: () => {
     const sub = get().subtotal();
+    const pricing = get().pricingSettings;
     if (sub === 0) return 0;
     if (get().discount?.type === "free_shipping") return 0;
-    if (sub >= FREE_SHIPPING_THRESHOLD) return 0;
-    return SHIPPING_COST;
+    if (sub >= pricing.freeShippingThreshold) return 0;
+    return pricing.shippingCost;
   },
   total: () => get().subtotal() - get().discountAmount() + get().shipping(),
   count: () => get().items.reduce((sum, i) => sum + i.quantity, 0),

@@ -1,17 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useCart, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/cart-store";
+import { useCart } from "@/lib/cart-store";
 import { discountDisplay } from "@/lib/discounts";
 import CheckoutModal from "./CheckoutModal";
 
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, removeItem, updateQuantity, subtotal, shipping, total, count, discountApplied, discountPercent, discountAmount, discount, applyDiscount, removeDiscount } = useCart();
+  const { items, isOpen, closeCart, updateQuantity, subtotal, shipping, total, count, discountApplied, discountPercent, discountAmount, discount, applyDiscount, removeDiscount, pricingSettings, loadPricingSettings } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [discountInput, setDiscountInput] = useState("");
   const [discountError, setDiscountError] = useState(false);
   const [discountChecking, setDiscountChecking] = useState(false);
+  const shippingCost = pricingSettings.shippingCost;
+  const freeShippingThreshold = pricingSettings.freeShippingThreshold;
+
+  useEffect(() => {
+    loadPricingSettings();
+  }, [loadPricingSettings]);
 
   if (!isOpen && !checkoutOpen) return null;
 
@@ -273,7 +279,7 @@ export default function CartDrawer() {
                 )}
 
                 {/* Free shipping banner */}
-                {subtotal() < FREE_SHIPPING_THRESHOLD && subtotal() > 0 && !discountApplied && (
+                {subtotal() < freeShippingThreshold && subtotal() > 0 && !discountApplied && (
                   <div
                     style={{
                       background: "rgba(201,168,76,0.07)",
@@ -284,15 +290,15 @@ export default function CartDrawer() {
                     }}
                   >
                     <p style={{ fontSize: "0.65rem", color: "var(--gold)", fontFamily: "'Cinzel', serif", letterSpacing: "0.06em" }}>
-                      ¡Envío GRATIS en compras de ${FREE_SHIPPING_THRESHOLD.toLocaleString()} MXN o más!
+                      ¡Envío GRATIS en compras de ${freeShippingThreshold.toLocaleString()} MXN o más!
                     </p>
                     <p style={{ fontSize: "0.58rem", color: "rgba(245,240,232,0.4)", marginTop: 3, fontStyle: "italic" }}>
-                      Te faltan ${(FREE_SHIPPING_THRESHOLD - subtotal()).toLocaleString()} MXN para envío gratis
+                      Te faltan ${(freeShippingThreshold - subtotal()).toLocaleString()} MXN para envío gratis
                     </p>
                   </div>
                 )}
 
-                {(subtotal() >= FREE_SHIPPING_THRESHOLD) && !discountApplied && (
+                {(subtotal() >= freeShippingThreshold) && !discountApplied && (
                   <div
                     style={{
                       background: "rgba(100,200,100,0.06)",
@@ -341,7 +347,7 @@ export default function CartDrawer() {
                     </span>
                   ) : (
                     <span style={{ fontSize: "0.78rem", color: "var(--cream-dim)", fontFamily: "'Cinzel', serif" }}>
-                      ${SHIPPING_COST.toLocaleString()} MXN
+                      ${shippingCost.toLocaleString()} MXN
                     </span>
                   )}
                 </div>

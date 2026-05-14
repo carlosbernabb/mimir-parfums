@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabase";
 import { generateOrderId } from "@/lib/orders";
-import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from "@/lib/pricing";
 import { discountAmountForSubtotal } from "@/lib/discounts";
 import { findActiveDiscount } from "@/lib/discount-store";
+import { getShippingSettings } from "@/lib/shipping-settings";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
@@ -131,7 +131,8 @@ export async function POST(req: NextRequest) {
     const discountPercent = discount?.type === "percent" ? discount.value : 0;
     const discountAmountMxn = discountAmountForSubtotal(discount, subtotalMxn);
     const freeShippingCodeApplied = discount?.type === "free_shipping";
-    const shippingMxn = freeShippingCodeApplied || subtotalMxn >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+    const pricing = await getShippingSettings();
+    const shippingMxn = freeShippingCodeApplied || subtotalMxn >= pricing.freeShippingThreshold ? 0 : pricing.shippingCost;
     const totalMxn = subtotalMxn - discountAmountMxn + shippingMxn;
 
     let orderId = generateOrderId();

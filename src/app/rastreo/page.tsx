@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { STATUS_LABELS, STATUS_ORDER, canCancel, type OrderStatus } from "@/lib/orders";
@@ -73,7 +73,7 @@ function TrackingContent() {
   const [contactSent, setContactSent] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
 
-  async function fetchOrder(id: string) {
+  const fetchOrder = useCallback(async (id: string) => {
     setLoading(true);
     setError("");
     setOrder(null);
@@ -88,12 +88,12 @@ function TrackingContent() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     const id = params.get("orderId");
-    if (id) fetchOrder(id);
-  }, []);
+    if (id) queueMicrotask(() => fetchOrder(id));
+  }, [fetchOrder, params]);
 
   async function handleCancel() {
     if (!order) return;

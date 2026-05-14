@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { STATUS_LABELS, type OrderStatus, type Order } from "@/lib/orders";
 import type { DiscountCode, DiscountType } from "@/lib/discounts";
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_COST, type PricingSettings } from "@/lib/pricing";
 
 const gold = "var(--gold)";
 
@@ -37,6 +38,7 @@ interface DbProduct {
 
 const emptyForm = { name: "", price: "", volume: "100ml", originalPrice: "", saleLabel: "", saleEnds: "" };
 const emptyDiscountForm = { code: "", type: "free_shipping" as DiscountType, value: "", label: "" };
+type AdminPanel = "orders" | "products" | "discounts" | "settings";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
@@ -50,7 +52,7 @@ export default function AdminPage() {
   const [emailAction, setEmailAction] = useState<string | null>(null);
 
   // Panel switcher
-  const [panel, setPanel] = useState<"orders" | "products" | "discounts">("orders");
+  const [panel, setPanel] = useState<AdminPanel>("orders");
 
   // Per-order ship form state
   const [shipForm, setShipForm] = useState<Record<string, { carrier: string; tracking: string; url: string }>>({});
@@ -77,10 +79,23 @@ export default function AdminPage() {
   const [discountForm, setDiscountForm] = useState(emptyDiscountForm);
   const [discountSaving, setDiscountSaving] = useState(false);
   const [discountError, setDiscountError] = useState("");
+  const [pricingForm, setPricingForm] = useState({
+    shippingCost: String(SHIPPING_COST),
+    freeShippingThreshold: String(FREE_SHIPPING_THRESHOLD),
+  });
+  const [pricingUpdatedAt, setPricingUpdatedAt] = useState<string | null>(null);
+  const [pricingSaving, setPricingSaving] = useState(false);
+  const [pricingError, setPricingError] = useState("");
+  const [pricingSuccess, setPricingSuccess] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("mimir_admin_token");
-    if (saved) { setToken(saved); loadOrders(saved, "all"); }
+    if (saved) {
+      queueMicrotask(() => {
+        setToken(saved);
+        loadOrders(saved, "all");
+      });
+    }
   }, []);
 
   async function handleLogin(e: React.FormEvent) {
@@ -138,10 +153,60 @@ export default function AdminPage() {
     }
   }
 
-  function handlePanelSwitch(p: "orders" | "products" | "discounts") {
+  async function loadPricingSettings(t: string) {
+    const res = await fetch("/api/admin/settings", {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const pricing = data.pricing as PricingSettings | undefined;
+      if (pricing) {
+        setPricingForm({
+          shippingCost: String(pricing.shippingCost),
+          freeShippingThreshold: String(pricing.freeShippingThreshold),
+        });
+        setPricingUpdatedAt(pricing.updatedAt ?? null);
+      }
+    }
+  }
+
+  function handlePanelSwitch(p: AdminPanel) {
     setPanel(p);
     if (p === "products" && token) loadDbProducts(token);
     if (p === "discounts" && token) loadDiscounts(token);
+    if (p === "settings" && token) loadPricingSettings(token);
+  }
+
+  async function savePricingSettings(e: React.FormEvent) {
+    e.preventDefault();
+    if (!token) return;
+    setPricingSaving(true);
+    setPricingError("");
+    setPricingSuccess("");
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          shippingCost: parseInt(pricingForm.shippingCost, 10),
+          freeShippingThreshold: parseInt(pricingForm.freeShippingThreshold, 10),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPricingError(data.error ?? "Error guardando envio");
+        return;
+      }
+      const pricing = data.pricing as PricingSettings;
+      setPricingForm({
+        shippingCost: String(pricing.shippingCost),
+        freeShippingThreshold: String(pricing.freeShippingThreshold),
+      });
+      setPricingUpdatedAt(pricing.updatedAt ?? null);
+      setPricingSuccess("Configuracion de envio guardada.");
+    } finally {
+      setPricingSaving(false);
+    }
   }
 
   async function saveDiscount(e: React.FormEvent) {
@@ -468,7 +533,7 @@ export default function AdminPage() {
 
         {/* Panel tabs */}
         <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
-          {(["orders", "products", "discounts"] as const).map((p) => (
+          {(["orders", "products", "discounts", "settings"] as const).map((p) => (
             <button
               key={p}
               onClick={() => handlePanelSwitch(p)}
@@ -484,7 +549,7 @@ export default function AdminPage() {
                 textTransform: "uppercase",
               }}
             >
-              {p === "orders" ? "Pedidos" : p === "products" ? "Productos" : "Descuentos"}
+              {p === "orders" ? "Pedidos" : p === "products" ? "Productos" : p === "discounts" ? "Descuentos" : "Envio"}
             </button>
           ))}
         </div>
@@ -1086,6 +1151,78 @@ export default function AdminPage() {
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {panel === "settings" && (
+          <div style={{ display: "grid", gap: 18 }}>
+            <div style={{ border: "1px solid rgba(201,168,76,0.35)", background: "rgba(201,168,76,0.03)", padding: 18 }}>
+              <p className="font-display" style={{ fontSize: "0.5rem", letterSpacing: "0.22em", color: gold, textTransform: "uppercase", marginBottom: 14 }}>
+                Configuracion de envio
+              </p>
+
+              <form onSubmit={savePricingSettings} style={{ display: "grid", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: "0.48rem", letterSpacing: "0.15em", color: "rgba(245,240,232,0.4)", fontFamily: "'Cinzel', serif", textTransform: "uppercase", display: "block", marginBottom: 5 }}>
+                      Cobrar envio MXN
+                    </label>
+                    <input
+                      style={input}
+                      type="number"
+                      min="0"
+                      value={pricingForm.shippingCost}
+                      onChange={(e) => setPricingForm({ ...pricingForm, shippingCost: e.target.value })}
+                      placeholder="180"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: "0.48rem", letterSpacing: "0.15em", color: "rgba(245,240,232,0.4)", fontFamily: "'Cinzel', serif", textTransform: "uppercase", display: "block", marginBottom: 5 }}>
+                      Envio gratis desde MXN
+                    </label>
+                    <input
+                      style={input}
+                      type="number"
+                      min="0"
+                      value={pricingForm.freeShippingThreshold}
+                      onChange={(e) => setPricingForm({ ...pricingForm, freeShippingThreshold: e.target.value })}
+                      placeholder="1900"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <div>
+                    <p style={{ color: "rgba(245,240,232,0.55)", fontSize: "0.78rem", lineHeight: 1.7, fontStyle: "italic", margin: 0 }}>
+                      Este precio se muestra en el carrito y se usa en Stripe al crear el pedido.
+                    </p>
+                    {pricingUpdatedAt && (
+                      <p style={{ color: "rgba(245,240,232,0.25)", fontSize: "0.62rem", marginTop: 4 }}>
+                        Ultimo cambio: {formatDate(pricingUpdatedAt)}
+                      </p>
+                    )}
+                  </div>
+                  <button className="btn-primary" type="submit" disabled={pricingSaving} style={{ padding: "12px 20px", fontSize: "0.6rem" }}>
+                    {pricingSaving ? "Guardando..." : "Guardar envio"}
+                  </button>
+                </div>
+              </form>
+
+              {pricingError && <p style={{ color: "#e74c3c", fontSize: "0.75rem", marginTop: 10, fontStyle: "italic" }}>{pricingError}</p>}
+              {pricingSuccess && <p style={{ color: "rgba(120,220,120,0.9)", fontSize: "0.75rem", marginTop: 10, fontStyle: "italic" }}>{pricingSuccess}</p>}
+            </div>
+
+            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(201,168,76,0.1)", padding: "14px 16px" }}>
+              <p style={{ fontSize: "0.5rem", letterSpacing: "0.18em", color: gold, fontFamily: "'Cinzel', serif", textTransform: "uppercase", marginBottom: 8 }}>
+                Vista actual
+              </p>
+              <p style={{ fontSize: "0.82rem", color: "rgba(245,240,232,0.65)", lineHeight: 1.8, fontStyle: "italic", margin: 0 }}>
+                Si el subtotal es menor a ${Number(pricingForm.freeShippingThreshold || 0).toLocaleString()} MXN,
+                el cliente paga ${Number(pricingForm.shippingCost || 0).toLocaleString()} MXN de envio.
+              </p>
             </div>
           </div>
         )}
