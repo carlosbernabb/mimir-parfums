@@ -40,6 +40,7 @@ type SkydropxQuotation = {
 };
 
 const SKYDROPX_BASE_URL = (process.env.SKYDROPX_BASE_URL || "https://pro.skydropx.com/api/v1").replace(/\/$/, "");
+const ORIGIN_ADDRESS_TEMPLATE_ID = process.env.SKYDROPX_ORIGIN_ADDRESS_TEMPLATE_ID || "";
 const ORIGIN_POSTAL_CODE = process.env.SKYDROPX_ORIGIN_POSTAL_CODE || "76269";
 const ORIGIN_STATE = process.env.SKYDROPX_ORIGIN_STATE || "Queretaro";
 const ORIGIN_CITY = process.env.SKYDROPX_ORIGIN_CITY || "Queretaro";
@@ -151,19 +152,31 @@ export function isSkydropxConfigured() {
   return Boolean(getApiToken());
 }
 
+function buildOriginAddress() {
+  if (ORIGIN_ADDRESS_TEMPLATE_ID) {
+    return {
+      address_template_id: ORIGIN_ADDRESS_TEMPLATE_ID,
+      country_code: "MX",
+      postal_code: ORIGIN_POSTAL_CODE,
+    };
+  }
+
+  return {
+    country_code: "MX",
+    postal_code: ORIGIN_POSTAL_CODE,
+    area_level1: ORIGIN_STATE,
+    area_level2: ORIGIN_CITY,
+    area_level3: ORIGIN_COLONY,
+  };
+}
+
 export async function quoteCheapestEstafeta(address: ShippingAddress, items: QuoteItem[]): Promise<ShippingRateQuote> {
   const postalCode = normalizePostalCode(address.codigoPostal);
   if (postalCode.length !== 5) throw new Error("Codigo postal invalido");
 
   const quotationPayload = {
     quotation: {
-      address_from: {
-        country_code: "MX",
-        postal_code: ORIGIN_POSTAL_CODE,
-        area_level1: ORIGIN_STATE,
-        area_level2: ORIGIN_CITY,
-        area_level3: ORIGIN_COLONY,
-      },
+      address_from: buildOriginAddress(),
       address_to: {
         country_code: "MX",
         postal_code: postalCode,
