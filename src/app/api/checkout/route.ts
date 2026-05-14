@@ -5,6 +5,7 @@ import { generateOrderId } from "@/lib/orders";
 import { discountAmountForSubtotal } from "@/lib/discounts";
 import { findActiveDiscount } from "@/lib/discount-store";
 import { getShippingSettings } from "@/lib/shipping-settings";
+import { isSkydropxConfigured, quoteCheapestEstafeta } from "@/lib/skydropx";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
@@ -132,7 +133,19 @@ export async function POST(req: NextRequest) {
     const discountAmountMxn = discountAmountForSubtotal(discount, subtotalMxn);
     const freeShippingCodeApplied = discount?.type === "free_shipping";
     const pricing = await getShippingSettings();
-    const shippingMxn = freeShippingCodeApplied || subtotalMxn >= pricing.freeShippingThreshold ? 0 : pricing.shippingCost;
+    let shippingMxn = 0;
+    let shippingQuoteNote: string | null = null;
+
+    if (!freeShippingCodeApplied && subtotalMxn < pricing.freeShippingThreshold) {
+      if (isSkydropxConfigured()) {
+        const quote = await quoteCheapestEstafeta(shipping, items);
+        shippingMxn = quote.amount;
+        shippingQuoteNote = `Envio Estafeta Skydropx: ${quote.service} - $${quote.amount} MXN${quote.rateId ? ` - rate ${quote.rateId}` : ""}`;
+      } else {
+        shippingMxn = pricing.shippingCost;
+        shippingQuoteNote = "Envio con tarifa manual por falta de configuracion Skydropx";
+      }
+    }
     const totalMxn = subtotalMxn - discountAmountMxn + shippingMxn;
 
     let orderId = generateOrderId();
@@ -153,7 +166,9 @@ export async function POST(req: NextRequest) {
       items,
       shipping,
       total_mxn: totalMxn,
-      notes: discount ? `Descuento aplicado: ${discount.code} (${discount.label})` : null,
+      notes: [discount ? `Descuento aplicado: ${discount.code} (${discount.label})` : null, shippingQuoteNote]
+        .filter(Boolean)
+        .join(" | ") || null,
     });
 
     if (insertError) {

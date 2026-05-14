@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart-store";
 import { discountDisplay } from "@/lib/discounts";
+import type { ShippingQuote } from "@/lib/pricing";
 
 interface CheckoutModalProps {
   onClose: () => void;
@@ -30,19 +31,69 @@ const ESTADOS = [
 ];
 
 export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
-  const { items, subtotal, shipping: shippingTotal, total, discountApplied, discountPercent, discountAmount, discountCode, discount, pricingSettings, loadPricingSettings } = useCart();
+  const { items, subtotal, shipping: shippingTotal, total, discountApplied, discountPercent, discountAmount, discountCode, discount, pricingSettings, shippingQuote, loadPricingSettings, setShippingQuote } = useCart();
   const [step, setStep] = useState<"shipping" | "payment" | "success">("shipping");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState("");
   const [shipping, setShipping] = useState<ShippingData>({
     nombre: "", email: "", telefono: "", calle: "", numero: "", colonia: "",
     ciudad: "", estado: "", codigoPostal: "",
   });
-  const shippingCost = pricingSettings.shippingCost;
-
   useEffect(() => {
     loadPricingSettings();
   }, [loadPricingSettings]);
+
+  useEffect(() => {
+    const canQuote =
+      shipping.codigoPostal.replace(/\D/g, "").length === 5 &&
+      shipping.colonia.trim().length > 0 &&
+      shipping.ciudad.trim().length > 0 &&
+      shipping.estado.trim().length > 0 &&
+      subtotal() > 0 &&
+      !discountApplied &&
+      subtotal() < pricingSettings.freeShippingThreshold;
+
+    if (!canQuote) {
+      queueMicrotask(() => {
+        setShippingQuote(null);
+        setQuoteError("");
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setQuoteLoading(true);
+      setQuoteError("");
+      try {
+        const res = await fetch("/api/shipping/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: items.map((item) => ({ quantity: item.quantity })),
+            shipping,
+          }),
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "No se pudo cotizar el envio");
+        setShippingQuote(data.quote as ShippingQuote);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setShippingQuote(null);
+        setQuoteError(err instanceof Error ? err.message : "No se pudo cotizar el envio");
+      } finally {
+        if (!controller.signal.aborted) setQuoteLoading(false);
+      }
+    }, 500);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [discountApplied, items, pricingSettings.freeShippingThreshold, setShippingQuote, shipping, subtotal]);
 
   const updateField = (field: keyof ShippingData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -179,6 +230,7 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
                 </div>
                 <Field label="Código Postal" value={shipping.codigoPostal} onChange={updateField("codigoPostal")} placeholder="Ej. 03100" type="number" required />
               </div>
+              <ShippingQuoteStatus quote={shippingQuote} loading={quoteLoading} error={quoteError} />
 
               <button
                 className="btn-primary"
@@ -221,9 +273,14 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
                   {shippingTotal() === 0 ? (
                     <span style={{ fontSize: "0.78rem", color: "rgba(120,220,120,0.85)", fontFamily: "'Cinzel', serif" }}>GRATIS</span>
                   ) : (
-                    <span style={{ fontSize: "0.78rem", color: "var(--cream-dim)", fontFamily: "'Cinzel', serif" }}>${shippingCost.toLocaleString()} MXN</span>
+                    <span style={{ fontSize: "0.78rem", color: "var(--cream-dim)", fontFamily: "'Cinzel', serif" }}>${shippingTotal().toLocaleString()} MXN</span>
                   )}
                 </div>
+                {shippingQuote && shippingTotal() > 0 && (
+                  <p style={{ fontSize: "0.62rem", color: "rgba(245,240,232,0.35)", margin: "-6px 0 10px", fontStyle: "italic", textAlign: "right" }}>
+                    {shippingQuote.carrier} - {shippingQuote.service}
+                  </p>
+                )}
                 {discountApplied && discountAmount() > 0 && (
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                     <span style={{ fontSize: "0.7rem", color: "rgba(120,220,120,0.8)", fontStyle: "italic" }}>✓ {discountPercent > 0 ? `Descuento ${discountPercent}%` : discountDisplay(discount)}</span>
@@ -340,6 +397,47 @@ function Field({
       />
     </div>
   );
+}
+
+function ShippingQuoteStatus({
+  quote,
+  loading,
+  error,
+}: {
+  quote: ShippingQuote | null;
+  loading: boolean;
+  error: string;
+}) {
+  if (loading) {
+    return (
+      <p style={{ margin: "12px 0 0", color: "rgba(201,168,76,0.85)", fontSize: "0.7rem", fontStyle: "italic", textAlign: "center" }}>
+        Cotizando Estafeta...
+      </p>
+    );
+  }
+
+  if (quote) {
+    return (
+      <div style={{ marginTop: 12, background: "rgba(201,168,76,0.07)", border: "1px solid rgba(201,168,76,0.2)", padding: "10px 12px", textAlign: "center" }}>
+        <p style={{ color: "var(--gold)", fontSize: "0.65rem", fontFamily: "'Cinzel', serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          Estafeta ${quote.amount.toLocaleString()} MXN
+        </p>
+        <p style={{ color: "rgba(245,240,232,0.42)", fontSize: "0.58rem", marginTop: 3, fontStyle: "italic" }}>
+          {quote.service}{quote.days ? ` - ${quote.days} dias habiles aprox.` : ""}
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <p style={{ margin: "12px 0 0", color: "#e74c3c", fontSize: "0.68rem", fontStyle: "italic", textAlign: "center" }}>
+        {error}
+      </p>
+    );
+  }
+
+  return null;
 }
 
 function SelectField({

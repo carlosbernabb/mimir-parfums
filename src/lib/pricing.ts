@@ -9,3 +9,11 @@ export type PricingSettings = {
   freeShippingThreshold: number;
   updatedAt?: string;
 };
+
+export type ShippingQuote = {
+  amount: number;
+  carrier: string;
+  service: string;
+  days: number | null;
+  source?: "manual" | "skydropx";
+};

@@ -5,11 +5,13 @@ export {
   FREE_SHIPPING_THRESHOLD,
   SHIPPING_COST,
   type PricingSettings,
+  type ShippingQuote,
 } from "./pricing";
 import {
   FREE_SHIPPING_THRESHOLD,
   SHIPPING_COST,
   type PricingSettings,
+  type ShippingQuote,
 } from "./pricing";
 
 export interface CartItem {
@@ -25,6 +27,7 @@ interface CartStore {
   discountPercent: number;
   discountCode: string;
   pricingSettings: PricingSettings;
+  shippingQuote: ShippingQuote | null;
   addItem: (product: Product) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
@@ -34,6 +37,7 @@ interface CartStore {
   applyDiscount: (code: string) => Promise<boolean>;
   removeDiscount: () => void;
   loadPricingSettings: () => Promise<void>;
+  setShippingQuote: (quote: ShippingQuote | null) => void;
   subtotal: () => number;
   discountAmount: () => number;
   shipping: () => number;
@@ -52,6 +56,7 @@ export const useCart = create<CartStore>((set, get) => ({
     shippingCost: SHIPPING_COST,
     freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
   },
+  shippingQuote: null,
   addItem: (product) => {
     set((state) => {
       const existing = state.items.find((i) => i.product.id === product.id);
@@ -62,13 +67,14 @@ export const useCart = create<CartStore>((set, get) => ({
               ? { ...i, quantity: i.quantity + 1 }
               : i
           ),
+          shippingQuote: null,
         };
       }
-      return { items: [...state.items, { product, quantity: 1 }] };
+      return { items: [...state.items, { product, quantity: 1 }], shippingQuote: null };
     });
   },
   removeItem: (productId) =>
-    set((state) => ({ items: state.items.filter((i) => i.product.id !== productId) })),
+    set((state) => ({ items: state.items.filter((i) => i.product.id !== productId), shippingQuote: null })),
   updateQuantity: (productId, quantity) =>
     set((state) => ({
       items: quantity <= 0
@@ -76,8 +82,9 @@ export const useCart = create<CartStore>((set, get) => ({
         : state.items.map((i) =>
             i.product.id === productId ? { ...i, quantity } : i
           ),
+      shippingQuote: null,
     })),
-  clearCart: () => set({ items: [], discount: null, discountApplied: false, discountPercent: 0, discountCode: "" }),
+  clearCart: () => set({ items: [], discount: null, discountApplied: false, discountPercent: 0, discountCode: "", shippingQuote: null }),
   openCart: () => set({ isOpen: true }),
   closeCart: () => set({ isOpen: false }),
   applyDiscount: async (code: string) => {
@@ -99,6 +106,7 @@ export const useCart = create<CartStore>((set, get) => ({
     return true;
   },
   removeDiscount: () => set({ discount: null, discountApplied: false, discountPercent: 0, discountCode: "" }),
+  setShippingQuote: (quote) => set({ shippingQuote: quote }),
   loadPricingSettings: async () => {
     const res = await fetch("/api/settings", { cache: "no-store" });
     if (!res.ok) return;
@@ -126,6 +134,7 @@ export const useCart = create<CartStore>((set, get) => ({
     if (sub === 0) return 0;
     if (get().discount?.type === "free_shipping") return 0;
     if (sub >= pricing.freeShippingThreshold) return 0;
+    if (get().shippingQuote) return get().shippingQuote!.amount;
     return pricing.shippingCost;
   },
   total: () => get().subtotal() - get().discountAmount() + get().shipping(),
