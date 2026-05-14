@@ -232,13 +232,26 @@ export default function CheckoutModal({ onClose, onBack }: CheckoutModalProps) {
               </div>
               <ShippingQuoteStatus quote={shippingQuote} loading={quoteLoading} error={quoteError} />
 
-              <button
-                className="btn-primary"
-                style={{ width: "100%", marginTop: 24, padding: 15 }}
-                type="submit"
-              >
-                Continuar al Pago →
-              </button>
+              {(() => {
+                const ready = validateShipping() && shippingQuote !== null && !quoteLoading;
+                return (
+                  <button
+                    className="btn-primary"
+                    style={{
+                      width: "100%",
+                      marginTop: 24,
+                      padding: 15,
+                      opacity: ready ? 1 : 0.35,
+                      cursor: ready ? "pointer" : "not-allowed",
+                      transition: "opacity 0.3s ease",
+                    }}
+                    type="submit"
+                    disabled={!ready}
+                  >
+                    {quoteLoading ? "Cotizando envío..." : "Continuar al Pago →"}
+                  </button>
+                );
+              })()}
             </form>
           )}
 
