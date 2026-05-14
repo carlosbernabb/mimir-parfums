@@ -46,8 +46,32 @@ const ORIGIN_STATE = process.env.SKYDROPX_ORIGIN_STATE || "Queretaro";
 const ORIGIN_CITY = process.env.SKYDROPX_ORIGIN_CITY || "Queretaro";
 const ORIGIN_COLONY = process.env.SKYDROPX_ORIGIN_COLONY || "Queretaro";
 
-function getApiToken() {
-  return process.env.SKYDROPX_BEARER_TOKEN || process.env.SKYDROPX_API_TOKEN || "";
+// OAuth token cache (module-level, lives for the duration of the serverless instance)
+let cachedToken: { value: string; expiresAt: number } | null = null;
+
+async function getApiToken(): Promise<string> {
+  // Static token takes priority (manual override)
+  const staticToken = process.env.SKYDROPX_BEARER_TOKEN || process.env.SKYDROPX_API_TOKEN || "";
+  if (staticToken) return staticToken;
+
+  const clientId = process.env.SKYDROPX_CLIENT_ID || "";
+  const clientSecret = process.env.SKYDROPX_CLIENT_SECRET || "";
+  if (!clientId || !clientSecret) return "";
+
+  // Return cached token if still valid (with 5-min buffer)
+  if (cachedToken && Date.now() < cachedToken.expiresAt - 300_000) {
+    return cachedToken.value;
+  }
+
+  const res = await fetch(`${SKYDROPX_BASE_URL}/oauth/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret }),
+  });
+  if (!res.ok) throw new Error(`Skydropx OAuth fallo ${res.status}`);
+  const data = (await res.json()) as { access_token: string; expires_in: number };
+  cachedToken = { value: data.access_token, expiresAt: Date.now() + data.expires_in * 1000 };
+  return cachedToken.value;
 }
 
 function cleanText(value: string) {
@@ -127,8 +151,8 @@ function chooseCheapestEstafeta(raw: unknown) {
 }
 
 async function skydropxFetch(path: string, init?: RequestInit) {
-  const token = getApiToken();
-  if (!token) throw new Error("Falta SKYDROPX_BEARER_TOKEN en variables de entorno");
+  const token = await getApiToken();
+  if (!token) throw new Error("Faltan credenciales de Skydropx en variables de entorno");
 
   const res = await fetch(`${SKYDROPX_BASE_URL}${path}`, {
     ...init,
@@ -149,7 +173,11 @@ async function skydropxFetch(path: string, init?: RequestInit) {
 }
 
 export function isSkydropxConfigured() {
-  return Boolean(getApiToken());
+  return Boolean(
+    process.env.SKYDROPX_BEARER_TOKEN ||
+    process.env.SKYDROPX_API_TOKEN ||
+    (process.env.SKYDROPX_CLIENT_ID && process.env.SKYDROPX_CLIENT_SECRET)
+  );
 }
 
 function buildOriginAddress() {
