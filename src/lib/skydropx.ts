@@ -66,10 +66,10 @@ function numberValue(value: unknown) {
 function buildParcel(items: QuoteItem[]) {
   const quantity = Math.max(1, items.reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0));
   const weightPerItem = Number(process.env.SKYDROPX_PACKAGE_WEIGHT_KG || 1);
-  const length = Number(process.env.SKYDROPX_PACKAGE_LENGTH_CM || 20);
-  const width = Number(process.env.SKYDROPX_PACKAGE_WIDTH_CM || 15);
-  const baseHeight = Number(process.env.SKYDROPX_PACKAGE_HEIGHT_CM || 10);
-  const extraHeightPerItem = Number(process.env.SKYDROPX_PACKAGE_EXTRA_HEIGHT_CM || 4);
+  const length = Number(process.env.SKYDROPX_PACKAGE_LENGTH_CM || 15);
+  const width = Number(process.env.SKYDROPX_PACKAGE_WIDTH_CM || 10);
+  const baseHeight = Number(process.env.SKYDROPX_PACKAGE_HEIGHT_CM || 15);
+  const extraHeightPerItem = Number(process.env.SKYDROPX_PACKAGE_EXTRA_HEIGHT_CM || 0);
 
   return {
     length: Math.max(1, Math.round(length)),
