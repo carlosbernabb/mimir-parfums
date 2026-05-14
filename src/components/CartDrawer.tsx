@@ -346,8 +346,8 @@ export default function CartDrawer() {
                       GRATIS
                     </span>
                   ) : (
-                    <span style={{ fontSize: "0.78rem", color: "var(--cream-dim)", fontFamily: "'Cinzel', serif" }}>
-                      ${shippingCost.toLocaleString()} MXN
+                    <span style={{ fontSize: "0.78rem", color: "rgba(245,240,232,0.45)", fontStyle: "italic" }}>
+                      Se confirma al pagar
                     </span>
                   )}
                 </div>
@@ -359,21 +359,28 @@ export default function CartDrawer() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    marginBottom: 16,
+                    marginBottom: shipping() === 0 ? 16 : 4,
                     alignItems: "flex-end",
                   }}
                 >
                   <span style={{ fontSize: "0.8rem", color: "var(--cream-dim)", fontStyle: "italic" }}>
-                    Total del pedido
+                    {shipping() === 0 ? "Total del pedido" : "Subtotal"}
                   </span>
                   <span
                     className="font-display"
                     style={{ fontSize: "1.3rem", letterSpacing: "0.02em" }}
                   >
-                    ${total().toLocaleString()}
+                    ${(subtotal() - discountAmount()).toLocaleString()}
                     <span style={{ fontSize: "0.65rem", color: "var(--cream-dim)", marginLeft: 4 }}>MXN</span>
                   </span>
                 </div>
+                {shipping() !== 0 && (
+                  <div style={{ textAlign: "right", marginBottom: 16 }}>
+                    <span style={{ fontSize: "0.7rem", color: "rgba(245,240,232,0.35)", fontStyle: "italic" }}>
+                      + envío según tu ubicación
+                    </span>
+                  </div>
+                )}
 
                 <button
                   className="btn-primary"
