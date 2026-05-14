@@ -4,8 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { sendNewOrderToAdmin, sendConfirmationToCustomer } from "@/lib/email";
 import { Order } from "@/lib/orders";
 
-// Aumentar límite de tiempo en Vercel (máx 60s en plan Pro, 10s en Hobby)
-export const maxDuration = 60;
+export const maxDuration = 10;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-04-22.dahlia",
@@ -15,14 +14,23 @@ export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
 
-  if (!sig || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: "Missing signature" }, { status: 400 });
+  // Siempre devolver 200 a Stripe para evitar que deshabilite el endpoint.
+  // Los errores de configuración se loguean pero no causan reintentos de Stripe.
+  if (!sig) {
+    console.error("Webhook: falta stripe-signature header");
+    return NextResponse.json({ received: true });
+  }
+
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error("Webhook: STRIPE_WEBHOOK_SECRET no configurado en Vercel");
+    return NextResponse.json({ received: true });
   }
 
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
+    // Firma inválida = posible request fraudulento, sí devolver 400 aquí
     console.error("Webhook signature error:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
@@ -41,8 +49,9 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Supabase update error:", error);
-      return NextResponse.json({ error: "DB error" }, { status: 500 });
+      // Loguear pero devolver 200 — Stripe no debe reintentar por errores de DB
+      console.error(`Webhook: Supabase error para orden ${orderId}:`, error);
+      return NextResponse.json({ received: true });
     }
 
     try {
@@ -50,10 +59,9 @@ export async function POST(req: NextRequest) {
         sendNewOrderToAdmin(order as Order),
         sendConfirmationToCustomer(order as Order),
       ]);
-      console.log(`Emails enviados correctamente para orden ${orderId}`);
+      console.log(`Emails enviados para orden ${orderId}`);
     } catch (emailErr) {
-      // Error capturado — el webhook igual devuelve 200 para que Stripe no reintente
-      console.error("Email error para orden", orderId, ":", JSON.stringify(emailErr, Object.getOwnPropertyNames(emailErr)));
+      console.error("Webhook: Email error para orden", orderId, ":", JSON.stringify(emailErr, Object.getOwnPropertyNames(emailErr)));
     }
   }
 
