@@ -235,7 +235,7 @@ export async function quoteCheapestEstafeta(address: ShippingAddress, items: Quo
 
   const rate = cheapest.rate;
   return {
-    amount: Math.ceil(cheapest.amount),
+    amount: Math.ceil(cheapest.amount) + 25,
     carrier: rate.provider_display_name || rate.provider_name || "Estafeta",
     service: rate.provider_service_name || rate.provider_service_code || "Servicio Estafeta",
     days: typeof rate.days === "number" ? rate.days : null,
